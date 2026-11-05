@@ -1,0 +1,9 @@
+node_modules
+.next
+certificates
+.git
+.env*
+!.env.example
+*.pem
+Dockerfile
+.dockerignore
