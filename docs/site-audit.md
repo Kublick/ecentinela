@@ -9,8 +9,9 @@ Status legend for the "New app" column: ✅ exists in this repo · 🟡 partly t
 - The live site is a custom Liquid theme (`Copy of controls-online-theme with WC - 23-JUL-21`, theme ID `120375607349`). It's built by Goplek, with later changes by Mobkii. It runs on the **`controls-online.myshopify.com`** store, not on `ecentinela`.
 - It's a B2B-style industrial electrical catalog: **~5,577 products, 609 collections**, Spanish (default, `es-MX`) and English (`/en/`), with prices in **USD**.
 - The key UX is **table-based ordering**. Collection pages list products as rows with part number, datasheet PDF, price, stock and a quantity box, plus a bulk "Actualizar carrito" button. There's also a **Quick Order** page for entering part numbers.
-- Pricing and several features come from **theme-only apps** (wholesale tiers, currency converter, related products, pre-order, chat). Those apps don't run on a headless storefront and need a replacement or a decision to drop them.
-- Biggest risks: **wholesale/tier pricing**, **migrating data** (products, collections, ~thousands of datasheet PDFs) from `controls-online` to `ecentinela`, and **customer accounts** (classic → new customer accounts).
+- Several features come from **theme-only apps** (wholesale membership pricing, currency converter, related products, pre-order, chat). Those apps don't run on a headless storefront and need a replacement or a decision to drop them.
+- The tier price table in the collection markup is a **hard-coded placeholder**, not real pricing (§5.2). Currency conversion is done in the browser by the Beast Currency Converter app, not by the tiers.
+- Biggest risks: **wholesale member pricing** (only if logged-in customers get special prices), **migrating data** (products, collections, ~thousands of datasheet PDFs) from `controls-online` to `ecentinela`, and **customer accounts** (classic → new customer accounts). Options for each are in §12.
 
 ## 2. Current site facts
 
@@ -116,18 +117,19 @@ Each product is a **table row**:
 | Description (rich text, bold specs) | Product description |
 | Proveedor (vendor) | `vendor` |
 | Ficha técnica (PDF icon) | `/cdn/shop/files/{handle}.pdf` |
-| Precio (USD $) | Price; hidden **quantity tiers** in the markup (e.g. 1-2 $120.00, 3-4 $117.50, 5+ $112.00) from the wholesale app |
+| Precio (USD $) | Product price in USD (converted in the browser by the currency app) |
 | Ordenar | Number input per row |
 | Disponibilidad | "**N en existencia**" (exact stock count) |
 
 - Heading shows the count, e.g. "81 Productos Relacionados".
 - **"Actualizar carrito"** adds every row with quantity > 0 in one go.
 - Numbered pagination, 20 per page. No sort, no filters.
+- **Hidden tier table is a placeholder.** Each row also contains a `<div class="price hidden">` with quantity tiers 1-2 $120.00, 3-4 $117.50, 5+ $112.00. All 18 products on `/collections/transformadores` have **exactly the same tiers** whatever their price ($65.20 to $367.68), so the tier-to-price ratio ranges from 0.33 to 1.84. It isn't a currency conversion (the ratio would be the same for every product) and it isn't real pricing. It's never shown. **Don't migrate it.**
 - On mobile, the description moves under the part number and each row has its own add-to-cart form.
 
 ### 5.3 Product page
 
-Not inspected (see §9). From the collection rows and catalog data, it should at least show: part number, title, description, vendor, price + quantity tiers, stock count, datasheet PDF, add to cart, related products (Tipo Related Products), "also bought" (Globo), recently viewed, and pre-order status where it applies.
+Not inspected (see §9). From the collection rows and catalog data, it should at least show: part number, title, description, vendor, price, stock count, datasheet PDF, add to cart, related products (Tipo Related Products), "also bought" (Globo), recently viewed, and pre-order status where it applies.
 
 ### 5.4 Quick Order (`/pages/quick-order`)
 
@@ -162,8 +164,8 @@ Not inspected (see §9). From the collection rows and catalog data, it should at
 
 | App / script | What it does | Headless plan | Priority |
 |---|---|---|---|
-| **Wholesale Pricing & Membership Manager** (SpurIT) | Quantity tier prices, member pricing | ⚠️ Theme-only. Replace with Shopify **B2B** catalogs + quantity price breaks (Plus), or a discount app built on Shopify Functions so prices apply at checkout | **High** |
-| Beast Currency Converter (Doubly) | Shows prices in other currencies | Use Shopify **Markets** (MXN market) + `@inContext(country:)` in the Storefront API | Medium |
+| **Wholesale Pricing & Membership Manager** (SpurIT) | Possibly special prices for logged-in, tagged members (not visible logged out). The tier table in the theme is a placeholder (§5.2) | ⚠️ Theme-only. If members do get special prices, replace with native Shopify **B2B** (§12.1). If not, uninstall | **High** until confirmed |
+| Beast Currency Converter (Doubly) | Converts the displayed USD prices to other currencies in the browser (`doubly.js`); checkout still charges USD | Use Shopify **Markets** (Mexico market in MXN) + `@inContext(country: MX)` in the Storefront API. Prices are shown **and charged** in MXN | Medium |
 | GTranslate | Language switcher (its snippet is **missing**, causing a Liquid error) | Shopify Translate & Adapt + `/en/` locale routing | Medium |
 | Essential Announcement Bar | Top bar message | Metaobject or env/config string | Low |
 | Essential Pre-order / Presale | Pre-order button for unavailable items | Selling plans or a "Sobre pedido" (made to order) label when stock = 0. Check whether it's used | Medium |
@@ -180,7 +182,7 @@ Not inspected (see §9). From the collection rows and catalog data, it should at
 
 ## 7. Decisions needed
 
-1. **Wholesale/tier pricing:** is it still used? Which customers get it? Is the store on Shopify Plus (native B2B) or not?
+1. **Wholesale member pricing:** do any customers get special prices when they log in? If yes, which ones and how are they set up in the SpurIT app? (Quantity tiers are already ruled out, see §5.2.)
 2. **Which store is the source of truth?** Products live on `controls-online`. Do we migrate everything to `ecentinela`, or point the headless app at `controls-online` and skip migration?
 3. **Collection UX:** keep the table + bulk quantity ordering (recommended for this audience) or switch to cards? Add filters by vendor/specs?
 4. **Languages/currency:** keep English? Show MXN prices?
@@ -242,8 +244,8 @@ Not inspected (see §9). From the collection rows and catalog data, it should at
 - [ ] WhatsApp button
 - [ ] Related / complementary products
 - [ ] Recently viewed
-- [ ] Tier/wholesale pricing (after decision §7.1)
-- [ ] Currency (MXN market) if wanted
+- [ ] Wholesale member pricing via native B2B, only if §7.1 confirms it's used
+- [ ] Currency: Mexico market in MXN (replaces the Beast Currency Converter)
 - [ ] Google verification + analytics
 - [ ] Sitemap/hreflang covering all products, collections, pages, `/en/`
 - [ ] Footer with legal links, payment badges, business address
@@ -252,3 +254,46 @@ Not inspected (see §9). From the collection rows and catalog data, it should at
 - [ ] Switch `ecentinela` to new customer accounts and register callback URLs for the production domain
 - [ ] Load-test collection pages with real data (5.6k products, 609 collections)
 - [ ] DNS cutover plan for `e-centinela.com` + Search Console
+
+## 12. Options for the main risks
+
+### 12.1 Wholesale member pricing
+
+Quantity tiers are ruled out (§5.2). The open question is whether logged-in members get special prices.
+
+| Option | How it works | Plan | Use when |
+|---|---|---|---|
+| **No special pricing** | One USD price per product; uninstall SpurIT | Any | Nobody gets member prices today |
+| **Native Shopify B2B** ⭐ | Companies + catalogs with fixed prices or % adjustments, volume pricing and quantity rules. The Storefront API returns the buyer's price once their company is known; checkout enforces it. Requires new customer accounts (§12.3) | Basic, Grow and Advanced (up to **3 active catalogs**); unlimited on Plus | Specific wholesale customers get special prices |
+| **Public discount app (Shopify Functions)** | App Store volume/customer-tag discount app. Applies at checkout; storefront reads its metafields to show prices | Any (must be a public app) | Discounts for everyone, or rules B2B can't express |
+| **Own Functions app** | Custom discount logic | **Plus only** (custom apps with Functions need Plus) | On Plus with unusual rules |
+
+### 12.2 Moving the data
+
+**First consider not migrating:** point the headless app at **`controls-online`** (install the Hydrogen channel there and use its tokens). Products, collections, PDFs, translations, redirects, customers, order history and inventory all stay where they are, and the Liquid site keeps running until the domain switches. Keep `ecentinela` only for a business reason (new owner/entity, plan, clean start).
+
+If migrating:
+
+| Option | Covers | Notes |
+|---|---|---|
+| Shopify CSV export/import | Products (images by URL, metafields), customers, inventory | Free. No smart collection rules, Files, pages, redirects, translations or orders |
+| **Matrixify** ⭐ | Products, smart/custom collections with rules, metafields, Files, pages, blogs, redirects, customers, orders as history | Paid app; repeatable export → import, good for a final re-sync |
+| Script (Admin GraphQL API) | Everything, incl. translations (`translationsRegister`) and Files (`fileCreate` from the old CDN URLs) | Most control; use it to turn `{handle}.pdf` into a `custom.datasheet` metafield |
+
+### 12.3 Customer accounts
+
+The Customer Account API (used by Hydrogen) only works with **new customer accounts**.
+
+| Option | Effect |
+|---|---|
+| **Switch to new customer accounts** ⭐ | Passwordless login with an email code. On the same store, customers keep their email, profile and orders. Required for native B2B |
+| Keep classic accounts | Only via the older Storefront API customer mutations; Hydrogen's helpers don't support it and Shopify is moving away from it |
+| No accounts | Guest checkout only; fine if few customers log in |
+
+On a new store, customers come over by CSV or Matrixify; passwords can't be exported, which doesn't matter with code login. Order history only moves with Matrixify.
+
+### 12.4 Suggested path
+
+1. Ask the business: do members get special prices? Why the new store? How many customers log in?
+2. If possible: connect the app to `controls-online`, switch to new customer accounts, add a Mexico market in MXN, and set up native B2B only if member pricing is real.
+3. Only if a new store is required: Matrixify migration + PDF metafield script, then step 2 on `ecentinela`.
