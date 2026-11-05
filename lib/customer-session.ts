@@ -1,3 +1,5 @@
+import { getPublicOrigin } from "./site";
+
 const COOKIE_NAME = "__Host-hydrogen_customer_session";
 const COOKIE_PATH = "/";
 const COOKIE_VERSION = "v1";
@@ -31,7 +33,7 @@ export class EncryptedCookieCustomerSession {
     assertSessionSecret(secret);
     const cookieValue = getCookieValue(request.headers.get("cookie"), COOKIE_NAME);
     const data = cookieValue ? await decryptSessionCookie(cookieValue, secret) : {};
-    return new EncryptedCookieCustomerSession(data, new URL(request.url).origin, secret);
+    return new EncryptedCookieCustomerSession(data, getPublicOrigin(request), secret);
   }
 
   getSessionItem(key: string) {

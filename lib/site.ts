@@ -9,6 +9,19 @@ export const SITE_ORIGIN =
     ? (process.env.SITE_ORIGIN ?? "http://localhost:3000")
     : "http://localhost:3000";
 
+/**
+ * Public origin for Customer Account OAuth redirects. Behind a reverse proxy
+ * (Coolify/Traefik) `request.url` carries the container bind address
+ * (`0.0.0.0:3000`), so production uses `SITE_ORIGIN`. Development keeps the
+ * request origin so `dev:https` on `local.tryhydrogen.dev` still works.
+ */
+export function getPublicOrigin(request: Request): string {
+  if (process.env.NODE_ENV === "production" && process.env.SITE_ORIGIN) {
+    return new URL(process.env.SITE_ORIGIN).origin;
+  }
+  return new URL(request.url).origin;
+}
+
 /** Build an absolute canonical URL from a path. */
 export function canonicalUrl(path: string): string {
   return new URL(path, SITE_ORIGIN).toString();

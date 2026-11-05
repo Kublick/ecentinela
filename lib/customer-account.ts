@@ -6,7 +6,7 @@ import { headers } from "next/headers";
 import { customerAccountConfig, defaultI18n } from "./config";
 import { EncryptedCookieCustomerSession } from "./customer-session";
 import { getSessionSecret } from "./env";
-import { SITE_ORIGIN } from "./site";
+import { getPublicOrigin, SITE_ORIGIN } from "./site";
 import { isCustomerAccountsAvailable } from "./storefront-config";
 
 let customerSession: ReturnType<typeof createCustomerSession> | undefined;
@@ -30,7 +30,7 @@ export async function createCustomerSessionManager(request: Request) {
 
 export function createEphemeralSessionManager(request: Request) {
   const data = new Map<string, unknown>();
-  const origin = new URL(request.url).origin;
+  const origin = getPublicOrigin(request);
 
   return {
     getSessionOrigin: () => origin,
