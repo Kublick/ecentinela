@@ -8,6 +8,8 @@ import { Header } from "@/components/Header";
 import { HeaderAccountLink, HeaderAccountLinkFallback } from "@/components/HeaderAccountLink";
 import { getAnalyticsShop } from "@/lib/analytics-shop";
 import { cartHandlers } from "@/lib/cart-handlers";
+import { getContent } from "@/lib/content";
+import type { Locale } from "@/lib/i18n";
 import { getStorefrontClient } from "@/lib/storefront";
 
 import { Providers } from "./providers";
@@ -24,8 +26,15 @@ import { Providers } from "./providers";
  * opts the subtree into dynamic rendering (resolves immediately on a real
  * request, never during prerender).
  */
-export async function AppShell({ children }: { children: React.ReactNode }) {
+export async function AppShell({
+  children,
+  locale,
+}: {
+  children: React.ReactNode;
+  locale: Locale;
+}) {
   await connection();
+  const content = getContent(locale);
 
   // Cart seed: per-buyer and non-blocking so the shell can stream.
   const cartData = getStorefrontClient().then((storefrontClient) =>
@@ -39,13 +48,14 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
         href="#main-content"
         className="focus-visible:bg-interactive focus-visible:text-interactive-text sr-only focus-visible:not-sr-only focus-visible:fixed focus-visible:start-4 focus-visible:top-4 focus-visible:z-50 focus-visible:rounded focus-visible:px-4 focus-visible:py-2"
       >
-        Skip to content
+        {content.general.skipToContent}
       </a>
 
       <Header
+        locale={locale}
         accountLink={
-          <Suspense fallback={<HeaderAccountLinkFallback />}>
-            <HeaderAccountLink />
+          <Suspense fallback={<HeaderAccountLinkFallback locale={locale} />}>
+            <HeaderAccountLink locale={locale} />
           </Suspense>
         }
         shopName={analyticsShop.shopName}
@@ -55,7 +65,7 @@ export async function AppShell({ children }: { children: React.ReactNode }) {
         {children}
       </main>
 
-      <Footer shopName={analyticsShop.shopName} />
+      <Footer locale={locale} shopName={analyticsShop.shopName} />
 
       <CartDrawer />
     </Providers>

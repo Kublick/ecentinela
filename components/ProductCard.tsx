@@ -1,7 +1,9 @@
 import type { StorefrontApi } from "@shopify/hydrogen";
 import Link from "next/link";
 
+import { getContent, interpolate } from "@/lib/content";
 import type { PRODUCT_CARD_QUERY } from "@/lib/fragments";
+import { LOCALE_TAGS, localizePath, type Locale } from "@/lib/i18n";
 import { shopifyImageUrl, srcSetFor } from "@/lib/image";
 import { formatPrice } from "@/lib/money";
 
@@ -12,6 +14,8 @@ export type ProductCardData = NonNullable<
 
 type ProductCardProps = {
   product: ProductCardData;
+  /** Passed as a prop because the card renders from server pages and client browsers. */
+  locale: Locale;
   /** Eager-load the first row on hero-less pages (PLP/search LCP). */
   loading?: "eager" | "lazy";
   fetchPriority?: "high" | "low" | "auto";
@@ -30,9 +34,12 @@ type ProductCardProps = {
  */
 export function ProductCard({
   product,
+  locale,
   loading = "lazy",
   fetchPriority = "auto",
 }: ProductCardProps) {
+  const content = getContent(locale);
+  const tag = LOCALE_TAGS[locale];
   const primaryImage = product.featuredImage;
   const secondaryImage = product.images.nodes[1] ?? null;
   const minPrice = product.priceRange.minVariantPrice;
@@ -62,7 +69,10 @@ export function ProductCard({
             <img
               src={shopifyImageUrl(secondaryImage.url, { width: 600 })}
               srcSet={srcSetFor(secondaryImage.url, { width: 600 })}
-              alt={secondaryImage.altText ?? `${product.title} alternate`}
+              alt={
+                secondaryImage.altText ??
+                interpolate(content.product.alternateImage, { title: product.title })
+              }
               className="h-full w-full object-cover"
               loading="lazy"
             />
@@ -70,30 +80,35 @@ export function ProductCard({
         ) : null}
         {onSale ? (
           <span className="badge-sale absolute start-2 top-2 inline-flex items-center rounded-full font-medium">
-            Sale
+            {content.product.badge.sale}
           </span>
         ) : null}
         {soldOut ? (
           <span className="badge-soldout absolute start-2 top-2 inline-flex items-center rounded-full font-medium">
-            Sold out
+            {content.product.badge.soldOut}
           </span>
         ) : null}
       </div>
       <div className="flex flex-col gap-0.5 text-left">
         <h3 className="type-body-sm text-on-surface line-clamp-2 font-medium">
-          <Link href={`/products/${product.handle}`} className="card-link text-on-surface">
+          <Link
+            href={localizePath(locale, `/products/${product.handle}`)}
+            className="card-link text-on-surface"
+          >
             {product.title}
           </Link>
         </h3>
         <div className="inline-flex flex-wrap items-baseline gap-2 text-sm">
           <span className={onSale ? "text-sale font-medium" : "text-on-surface font-medium"}>
-            <span className="sr-only">{onSale ? "Sale price: " : "Price: "}</span>
-            {formatPrice(minPrice)}
+            <span className="sr-only">
+              {onSale ? content.product.salePrice : content.product.price}
+            </span>
+            {formatPrice(minPrice, tag)}
           </span>
           {onSale && compareAt ? (
             <s className="text-compare text-sm">
-              <span className="sr-only">Regular price: </span>
-              {formatPrice(compareAt)}
+              <span className="sr-only">{content.product.regularPrice}</span>
+              {formatPrice(compareAt, tag)}
             </s>
           ) : null}
         </div>

@@ -1,37 +1,33 @@
 import Link from "next/link";
-import type { ReactNode } from "react";
+import { Suspense, type ReactNode } from "react";
 
-import { content } from "@/lib/content";
+import { getContent } from "@/lib/content";
+import { localizePath, type Locale } from "@/lib/i18n";
 
 import { CartTrigger } from "./CartTrigger";
+import { LanguageSwitch, LanguageSwitchFallback } from "./LanguageSwitch";
 import { MobileNavDialog } from "./MobileNavDialog";
 import { PredictiveSearchTrigger } from "./PredictiveSearchTrigger";
-
-/** Maps a header nav item to its route. "Collections" -> the collections
- * index; the category items -> their collection PLP. */
-const navItemHref: Record<(typeof content.header.navItems)[number], string> = {
-  Collections: "/collections",
-  Men: "/collections/men",
-  Women: "/collections/women",
-  Accessories: "/collections/accessories",
-};
 
 /**
  * Site header: server shell + small client islands. Server-rendered: logo
  * `<Link>`, desktop nav `<Link>`s, and a real `<Link href="/search">` search
  * trigger that is reachable without JS. Client islands: `CartTrigger`,
- * `PredictiveSearchTrigger`, and `MobileNavDialog`.
+ * `PredictiveSearchTrigger`, `LanguageSwitch` and `MobileNavDialog`.
  *
  * The cart trigger opens the `<dialog>` drawer via `showModal()`. The footer
  * `/cart` link is the full-page fallback when the drawer is unavailable.
  */
 export function Header({
+  locale,
   accountLink,
   shopName = "CORE",
 }: {
+  locale: Locale;
   accountLink?: ReactNode;
   shopName?: string;
 }) {
+  const content = getContent(locale);
   return (
     <header className="border-border bg-surface sticky top-0 z-40 border-b">
       <div
@@ -41,7 +37,7 @@ export function Header({
         <div className="flex items-center gap-2">
           <MobileNavDialog />
           <Link
-            href="/"
+            href={localizePath(locale, "/")}
             className="text-on-surface focus-visible:outline-accent inline-flex items-center rounded-sm text-lg font-medium no-underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
           >
             {shopName}
@@ -54,19 +50,27 @@ export function Header({
         >
           {content.header.navItems.map((item) => (
             <Link
-              key={item}
-              href={navItemHref[item]}
+              key={item.href}
+              href={localizePath(locale, item.href)}
               className="text-on-surface focus-visible:outline-accent shrink-0 rounded-sm text-sm font-normal whitespace-nowrap no-underline hover:opacity-70 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 motion-safe:transition-opacity"
             >
-              {item}
+              {item.label}
             </Link>
           ))}
         </nav>
 
         <div className="flex items-center gap-0">
+          <Suspense fallback={<LanguageSwitchFallback />}>
+            <LanguageSwitch />
+          </Suspense>
           <PredictiveSearchTrigger />
           <noscript>
-            <form action="/search" method="get" role="search" className="sr-only">
+            <form
+              action={localizePath(locale, "/search")}
+              method="get"
+              role="search"
+              className="sr-only"
+            >
               <label htmlFor="header-search-q">{content.general.search}</label>
               <input id="header-search-q" name="q" type="search" autoComplete="off" />
               <button type="submit">{content.search.submit}</button>

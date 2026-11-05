@@ -3,14 +3,7 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 
-import { content } from "@/lib/content";
-
-const navItemHref: Record<(typeof content.header.navItems)[number], string> = {
-  Collections: "/collections",
-  Men: "/collections/men",
-  Women: "/collections/women",
-  Accessories: "/collections/accessories",
-};
+import { useI18n } from "./I18nProvider";
 
 /**
  * Mobile nav — a `<dialog>` opened via state, with an always-rendered fallback
@@ -19,6 +12,7 @@ const navItemHref: Record<(typeof content.header.navItems)[number], string> = {
  * the hidden dialog content (links are real `<Link>`s).
  */
 export function MobileNavDialog() {
+  const { content, href } = useI18n();
   const [open, setOpen] = useState(false);
   const dialogRef = useRef<HTMLDialogElement>(null);
 
@@ -84,13 +78,13 @@ export function MobileNavDialog() {
             <nav aria-label={content.header.mobileNavigation}>
               <ul role="list" className="flex flex-col">
                 {content.header.navItems.map((item) => (
-                  <li key={item}>
+                  <li key={item.href}>
                     <Link
-                      href={navItemHref[item]}
+                      href={href(item.href)}
                       onClick={() => setOpen(false)}
                       className="text-on-surface flex items-center rounded-sm py-3 text-xl font-normal no-underline hover:opacity-70 motion-safe:transition-opacity"
                     >
-                      {item}
+                      {item.label}
                     </Link>
                   </li>
                 ))}

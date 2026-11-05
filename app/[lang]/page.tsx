@@ -4,32 +4,38 @@ import Link from "next/link";
 
 import { CollectionCard } from "@/components/CollectionCard";
 import { ProductCard } from "@/components/ProductCard";
-import { content } from "@/lib/content";
+import { getContent, type Content } from "@/lib/content";
+import { localeAlternates, localizePath, type Locale } from "@/lib/i18n";
+import { resolveLocale } from "@/lib/locale-params";
 import { HOME_QUERY } from "@/lib/queries";
 import { canonicalUrl } from "@/lib/site";
-import { staticStorefrontClient } from "@/lib/storefront-static";
+import { getStaticStorefrontClient } from "@/lib/storefront-static";
 
-export const metadata: Metadata = {
-  title: content.home.hero.heading,
-  description: content.home.hero.subtitle,
-  alternates: { canonical: "/" },
-  openGraph: {
+export async function generateMetadata({ params }: PageProps<"/[lang]">): Promise<Metadata> {
+  const locale = await resolveLocale(params);
+  const content = getContent(locale);
+  return {
     title: content.home.hero.heading,
     description: content.home.hero.subtitle,
-    type: "website",
-    url: canonicalUrl("/"),
-  },
-  twitter: { card: "summary_large_image" },
-};
+    alternates: localeAlternates(locale, "/"),
+    openGraph: {
+      title: content.home.hero.heading,
+      description: content.home.hero.subtitle,
+      type: "website",
+      url: canonicalUrl(localizePath(locale, "/")),
+    },
+    twitter: { card: "summary_large_image" },
+  };
+}
 
 /** Home catalog fetch — cached at the data boundary (F2: dynamic root layout
  *  precludes page-level prerender, so the cache-point is the fetch function). */
-async function fetchHome() {
+async function fetchHome(locale: Locale) {
   "use cache";
   cacheLife("minutes");
   cacheTag("products", "collections");
 
-  const { data, errors } = await staticStorefrontClient.graphql(HOME_QUERY);
+  const { data, errors } = await getStaticStorefrontClient(locale).graphql(HOME_QUERY);
   if (errors) {
     console.error("[hydrogen] Home query failed", errors);
   }
@@ -43,19 +49,21 @@ type HomeData = Awaited<ReturnType<typeof fetchHome>>;
 type ProductNode = HomeData["featuredProducts"][number];
 type CollectionNode = HomeData["featuredCollections"][number];
 
-export default async function HomePage() {
-  const { featuredProducts, featuredCollections } = await fetchHome();
+export default async function HomePage({ params }: PageProps<"/[lang]">) {
+  const locale = await resolveLocale(params);
+  const content = getContent(locale);
+  const { featuredProducts, featuredCollections } = await fetchHome(locale);
 
   return (
     <>
-      <Hero />
-      <BestSellers products={featuredProducts} />
-      <ShopByCategory collections={featuredCollections} />
+      <Hero locale={locale} content={content} />
+      <BestSellers locale={locale} content={content} products={featuredProducts} />
+      <ShopByCategory locale={locale} content={content} collections={featuredCollections} />
     </>
   );
 }
 
-function Hero() {
+function Hero({ locale, content }: { locale: Locale; content: Content }) {
   // The hero is the LCP image (notes/home.md): eager + high fetch priority.
   // Unsplash is a third-party host, so it passes through `shopifyImageUrl`
   // unchanged — build a width-descriptor srcset directly from its `w=` param
@@ -76,7 +84,7 @@ function Hero() {
             src={`${heroBaseUrl}&w=2000`}
             srcSet={heroSrcSet}
             sizes="100vw"
-            alt="A white chair beside a white wall"
+            alt=""
             className="h-full w-full object-cover"
             loading="eager"
             fetchPriority="high"
@@ -90,13 +98,13 @@ function Hero() {
           <p className="type-body-lg mb-6 max-w-prose opacity-90">{content.home.hero.subtitle}</p>
           <div className="flex flex-wrap items-center gap-3">
             <Link
-              href="/collections"
+              href={localizePath(locale, "/collections")}
               className="rounded-button button-primary focus-visible:outline-accent inline-flex h-11 items-center justify-center gap-2 px-5 text-sm font-medium no-underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
             >
               {content.home.hero.primaryCta}
             </Link>
             <Link
-              href="/collections"
+              href={localizePath(locale, "/search")}
               className="rounded-button button-secondary focus-visible:outline-accent inline-flex h-11 items-center justify-center gap-2 px-5 text-sm font-medium no-underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
             >
               {content.home.hero.secondaryCta}
@@ -108,13 +116,21 @@ function Hero() {
   );
 }
 
-function BestSellers({ products }: { products: ProductNode[] }) {
+function BestSellers({
+  locale,
+  content,
+  products,
+}: {
+  locale: Locale;
+  content: Content;
+  products: ProductNode[];
+}) {
   return (
     <section className="bg-surface w-full pt-20 pb-12">
       <div className="max-w-page px-margin mx-auto mb-4 flex items-center justify-between">
         <h2 className="type-heading-xl">{content.home.bestSellers}</h2>
         <Link
-          href="/collections"
+          href={localizePath(locale, "/collections")}
           className="min-h-touch-target text-on-surface focus-visible:outline-accent inline-flex items-center gap-1 rounded-sm text-sm font-normal no-underline hover:opacity-70 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 motion-safe:transition-opacity"
         >
           <span>{content.home.viewAll}</span>
@@ -142,7 +158,7 @@ function BestSellers({ products }: { products: ProductNode[] }) {
         <ul role="list" className="grid grid-cols-1 gap-x-1 gap-y-10 md:grid-cols-2 lg:grid-cols-4">
           {products.map((product) => (
             <li key={product.id}>
-              <ProductCard product={product} loading="lazy" />
+              <ProductCard product={product} locale={locale} loading="lazy" />
             </li>
           ))}
         </ul>
@@ -151,7 +167,15 @@ function BestSellers({ products }: { products: ProductNode[] }) {
   );
 }
 
-function ShopByCategory({ collections }: { collections: CollectionNode[] }) {
+function ShopByCategory({
+  locale,
+  content,
+  collections,
+}: {
+  locale: Locale;
+  content: Content;
+  collections: CollectionNode[];
+}) {
   return (
     <section className="w-full py-12" aria-labelledby="category-heading">
       <h2 id="category-heading" className="type-heading-xl max-w-page px-margin mx-auto mb-4">
@@ -160,7 +184,7 @@ function ShopByCategory({ collections }: { collections: CollectionNode[] }) {
       <ul role="list" className="max-w-page px-margin mx-auto grid grid-cols-1 md:grid-cols-3">
         {collections.map((collection) => (
           <li key={collection.id}>
-            <CollectionCard collection={collection} loading="lazy" />
+            <CollectionCard collection={collection} locale={locale} loading="lazy" />
           </li>
         ))}
       </ul>

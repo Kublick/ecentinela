@@ -10,11 +10,17 @@ import type { NextConfig } from "next";
  *
  * `output: "standalone"` emits a self-contained `server.js` for the Docker
  * image deployed on Coolify.
+ *
+ * `experimental.globalNotFound` serves `app/global-not-found.tsx` with a real
+ * 404 for unmatched URLs; the root layout lives under `app/[lang]`.
  */
 export default function nextConfig(): NextConfig {
   return {
     output: "standalone",
     cacheComponents: true,
+    experimental: {
+      globalNotFound: true,
+    },
     // React Strict Mode is disabled because `@shopify/hydrogen/react`'s
     // `PredictiveSearchProvider` destroys its store in the Strict Mode effect
     // cleanup (double-invoke), and `useMemo` returns the same (now-destroyed)

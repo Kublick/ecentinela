@@ -228,12 +228,12 @@ Not inspected (see §9). From the collection rows and catalog data, it should at
 - [ ] Export customers (and wholesale tags)
 
 ### App features
-- [ ] Spanish UI strings (`es-MX` default) + `/en/` locale routing
+- [x] Spanish UI strings (`es-MX` default) + `/en/` locale routing
 - [ ] Header: announcement bar, Quick Order, Contacto, Catálogo, mini cart with count and total
 - [ ] Category menu with the 22 categories (+ sub-categories)
-- [ ] Collection **table view** with per-row quantity + bulk "Actualizar carrito"
-- [ ] Show stock count (`quantityAvailable`, needs the `unauthenticated_read_product_inventory` scope)
-- [ ] Datasheet PDF link on collection rows and product pages
+- [x] Collection **table view** with per-row quantity + bulk "Actualizar carrito"
+- [ ] Show stock count: built behind `STOREFRONT_INVENTORY_ACCESS`; needs the `unauthenticated_read_product_inventory` scope on the token
+- [ ] Datasheet PDF link on product pages (collection rows done, reads the `custom.datasheet` metafield)
 - [ ] Product page parity (after checking it by hand, see §9)
 - [ ] Quick Order page (SKU autocomplete, 10+ rows, add all to cart)
 - [ ] SKU-first search
@@ -247,7 +247,7 @@ Not inspected (see §9). From the collection rows and catalog data, it should at
 - [ ] Wholesale member pricing via native B2B, only if §7.1 confirms it's used
 - [ ] Currency: Mexico market in MXN (replaces the Beast Currency Converter)
 - [ ] Google verification + analytics
-- [ ] Sitemap/hreflang covering all products, collections, pages, `/en/`
+- [ ] Sitemap/hreflang covering all products, collections, pages, `/en/` (hreflang + `/en/` done; sitemap still lists only the first 250 products/collections)
 - [ ] Footer with legal links, payment badges, business address
 
 ### Launch

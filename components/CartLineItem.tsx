@@ -2,7 +2,10 @@
 
 import { useCart, useCartForm } from "@/lib/cart";
 import { shopifyImageUrl } from "@/lib/image";
+import { interpolate } from "@/lib/content";
 import { formatPrice } from "@/lib/money";
+
+import { useI18n } from "./I18nProvider";
 
 /**
  * A cart line, derived from the typed `useCart` binding (F3: consume typed data,
@@ -28,14 +31,18 @@ export function CartLineItem({
   line: CartLine;
   onRemoveIntent?: () => void;
 }) {
+  const { content, href, tag } = useI18n();
   const { formProps, register } = useCartForm();
   const pendingLines = useCart((state) => state.pending.lines);
   const isPending = pendingLines.has(line.id);
 
   const merchandise = line.merchandise;
-  const productTitle = merchandise?.product?.title ?? merchandise?.title ?? "Product";
+  const productTitle = merchandise?.product?.title ?? merchandise?.title ?? content.cart.line.productFallback;
   const productHandle = merchandise?.product?.handle;
-  const selectedOptions = merchandise?.selectedOptions ?? [];
+  // Single-variant products report "Title: Default Title"; don't show it.
+  const selectedOptions = (merchandise?.selectedOptions ?? []).filter(
+    (option) => option.value !== "Default Title",
+  );
   const variantSubtitle = selectedOptions.map((option) => option.value).join(" / ");
 
   const totalAmount = line.cost.totalAmount;
@@ -51,7 +58,15 @@ export function CartLineItem({
         {merchandise?.image ? (
           <img
             src={shopifyImageUrl(merchandise.image.url, { width: 128 })}
-            alt={merchandise.image.altText ?? `${productTitle} in ${variantSubtitle}`}
+            alt={
+              merchandise.image.altText ??
+              (variantSubtitle
+                ? interpolate(content.cart.line.imageAlt, {
+                    title: productTitle,
+                    variant: variantSubtitle,
+                  })
+                : productTitle)
+            }
             className="h-full w-full object-cover"
           />
         ) : null}
@@ -60,7 +75,7 @@ export function CartLineItem({
       <div className="min-w-0">
         {productHandle ? (
           <a
-            href={`/products/${productHandle}`}
+            href={href(`/products/${productHandle}`)}
             className="type-body-sm text-on-surface font-medium no-underline hover:opacity-70"
           >
             {productTitle}
@@ -73,14 +88,14 @@ export function CartLineItem({
         ) : null}
         <p className="text-on-surface mt-2 text-sm">
           {onSale ? (
-            <span className="text-sale font-medium">{formatPrice(totalAmount)}</span>
+            <span className="text-sale font-medium">{formatPrice(totalAmount, tag)}</span>
           ) : (
-            formatPrice(totalAmount)
+            formatPrice(totalAmount, tag)
           )}
           {onSale && compareAt ? (
             <>
               {" "}
-              <s className="text-compare text-sm">{formatPrice(compareAt)}</s>
+              <s className="text-compare text-sm">{formatPrice(compareAt, tag)}</s>
             </>
           ) : null}
         </p>
@@ -94,20 +109,20 @@ export function CartLineItem({
               {...register("decrease")}
               disabled={line.quantity <= 1}
               className="button-icon h-8 w-9 rounded-s disabled:opacity-40"
-              aria-label={`Decrease quantity: ${productTitle}`}
+              aria-label={interpolate(content.cart.line.decrease, { title: productTitle })}
             >
               –
             </button>
             <input
               {...register("quantity", { value: line.quantity, interactive: true })}
               className="number-reset h-8 w-12 text-center text-sm"
-              aria-label={`Quantity: ${productTitle}`}
+              aria-label={interpolate(content.cart.line.quantity, { title: productTitle })}
             />
             <button
               type="submit"
               {...register("increase")}
               className="button-icon h-8 w-9 rounded-e"
-              aria-label={`Increase quantity: ${productTitle}`}
+              aria-label={interpolate(content.cart.line.increase, { title: productTitle })}
             >
               +
             </button>
@@ -122,7 +137,7 @@ export function CartLineItem({
           {...register("remove")}
           onClick={onRemoveIntent}
           className="button-icon self-start rounded"
-          aria-label={`Remove: ${productTitle}`}
+          aria-label={interpolate(content.cart.line.remove, { title: productTitle })}
         >
           <img
             src="/icons/icon-trash.svg"

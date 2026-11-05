@@ -5,8 +5,8 @@ import { formatMoney, type MoneyV2 } from "@shopify/hydrogen";
  * Keeps locale and display options consistent. Never build money strings by
  * concatenation and never compute totals client-side.
  *
- * This storefront is single-market (US/EN), so `en-US` is the correct locale.
- * Market-aware stores would pass the active market locale instead.
+ * Pass the page locale's BCP 47 tag (`LOCALE_TAGS[locale]`, or `tag` from
+ * `useI18n()`) so amounts format for the shopper's language.
  */
 export function formatPrice(money: MoneyV2, locale = "en-US"): string {
   return formatMoney(money, { locale }).toString();

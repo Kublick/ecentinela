@@ -14,10 +14,12 @@ import {
 import Link from "next/link";
 import { useEffect, useRef } from "react";
 
-import { content } from "@/lib/content";
 import { shopifyImageUrl } from "@/lib/image";
+import { interpolate } from "@/lib/content";
 import { formatPrice } from "@/lib/money";
 import { routeTemplates } from "@/lib/route-templates";
+
+import { useI18n } from "./I18nProvider";
 
 const PREDICTIVE_SEARCH_LIMIT = 5;
 const PREDICTIVE_SEARCH_DIALOG_ID = "search-modal";
@@ -49,6 +51,7 @@ function PredictiveSearchDialogInner({
   isOpen: boolean;
   onClose: () => void;
 }) {
+  const { content, href } = useI18n();
   const dialogRef = useRef<HTMLDialogElement>(null);
   const state = usePredictiveSearch();
   const { clear } = usePredictiveSearchActions();
@@ -86,7 +89,7 @@ function PredictiveSearchDialogInner({
       </h2>
       <div className="flex h-full flex-col">
         <div className="border-border flex shrink-0 items-center gap-2 border-b p-4">
-          <form {...formProps()} role="search" className="flex flex-1 items-center gap-2">
+          <form {...formProps()} action={href("/search")} role="search" className="flex flex-1 items-center gap-2">
             <label htmlFor="predictive-search-q" className="sr-only">
               {content.search.label}
             </label>
@@ -133,11 +136,11 @@ function PredictiveSearchDialogInner({
         {state.result.items.products.length > 0 ? (
           <div className="border-border shrink-0 border-t p-4">
             <Link
-              href={`/search?q=${encodeURIComponent(state.result.term)}`}
+              href={href(`/search?q=${encodeURIComponent(state.result.term)}`)}
               onClick={onClose}
               className="rounded-button button-secondary inline-flex h-11 w-full items-center justify-center px-4 text-sm font-medium no-underline"
             >
-              View all results
+              {content.search.viewAll}
             </Link>
           </div>
         ) : null}
@@ -153,13 +156,14 @@ function PredictiveBody({
   state: PredictiveSearchState<PredictiveSearchData>;
   onNavigate: () => void;
 }) {
+  const { content, href: localize, tag } = useI18n();
   const { status, error, result } = state;
   const products = result.items.products;
   const hasResults = products.length > 0;
   const term = result.term;
 
   if (status === "loading") {
-    return <p className="text-on-surface-secondary text-sm">Searching…</p>;
+    return <p className="text-on-surface-secondary text-sm">{content.search.searching}</p>;
   }
   if (error) {
     return (
@@ -171,16 +175,18 @@ function PredictiveBody({
   if (status === "success" && !hasResults && term) {
     return (
       <div data-testid="search-modal-empty" role="status" aria-live="polite">
-        <p className="text-on-surface text-sm">No results for “{term}”</p>
+        <p className="text-on-surface text-sm">
+          {interpolate(content.search.noResults, { terms: `\u201c${term}\u201d` })}
+        </p>
       </div>
     );
   }
   if (!hasResults) return null;
 
   return (
-    <ul role="list" aria-label="Products" className="flex flex-col gap-2">
+    <ul role="list" aria-label={content.search.products} className="flex flex-col gap-2">
       {products.map((product) => {
-        const href = getPredictiveSearchItemUrl(product, { routes: routeTemplates, term });
+        const href = localize(getPredictiveSearchItemUrl(product, { routes: routeTemplates, term }));
         const variant = product.selectedOrFirstAvailableVariant;
         const image = variant?.image ?? null;
         const price = variant?.price ?? null;
@@ -201,7 +207,7 @@ function PredictiveBody({
               <span className="flex flex-col">
                 <span className="type-body-sm text-on-surface font-medium">{product.title}</span>
                 {price ? (
-                  <span className="text-on-surface-secondary text-sm">{formatPrice(price)}</span>
+                  <span className="text-on-surface-secondary text-sm">{formatPrice(price, tag)}</span>
                 ) : null}
               </span>
             </Link>

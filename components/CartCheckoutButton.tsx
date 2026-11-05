@@ -3,13 +3,15 @@
 import { ShopPayButton } from "@shopify/hydrogen/react";
 
 import { useSuspenseCart } from "@/lib/cart";
-import { content } from "@/lib/content";
+
+import { useI18n } from "./I18nProvider";
 
 /**
  * `/cart` checkout button — reads the hydrated cart store for `checkoutUrl` and
  * `totalQuantity`. Hidden when the cart is empty.
  */
 export function CartCheckoutButton() {
+  const { content } = useI18n();
   const totalQuantity = useSuspenseCart((state) => state.data.totalQuantity);
   const checkoutUrl = useSuspenseCart((state) => state.data.checkoutUrl);
   const isEmpty = totalQuantity === 0;

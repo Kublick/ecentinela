@@ -1,6 +1,7 @@
 import Link from "next/link";
 
-import { content } from "@/lib/content";
+import { getContent } from "@/lib/content";
+import { localizePath, type Locale } from "@/lib/i18n";
 
 const footerLinkClass =
   "min-h-touch-target text-on-surface-secondary hover:text-on-surface focus-visible:outline-accent inline-flex items-center font-normal no-underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 motion-safe:transition-colors";
@@ -9,7 +10,8 @@ const footerLinkClass =
  * Site footer — shared chrome, server-rendered. Includes the `/cart` link that
  * keeps the cart route reachable when the drawer is unavailable.
  */
-export function Footer({ shopName = "CORE" }: { shopName?: string }) {
+export function Footer({ locale, shopName = "CORE" }: { locale: Locale; shopName?: string }) {
+  const content = getContent(locale);
   return (
     <footer className="max-w-page px-margin mx-auto w-full">
       <div className="border-border grid grid-cols-1 gap-8 border-t py-12 text-sm md:grid-cols-2 lg:grid-cols-4">
@@ -27,26 +29,13 @@ export function Footer({ shopName = "CORE" }: { shopName?: string }) {
             {content.footer.quickLinks}
           </h2>
           <ul role="list" className="flex flex-col gap-2">
-            <li>
-              <Link href="/collections" className={footerLinkClass}>
-                Collections
-              </Link>
-            </li>
-            <li>
-              <Link href="/collections/men" className={footerLinkClass}>
-                Men
-              </Link>
-            </li>
-            <li>
-              <Link href="/collections/women" className={footerLinkClass}>
-                Women
-              </Link>
-            </li>
-            <li>
-              <Link href="/collections/accessories" className={footerLinkClass}>
-                Accessories
-              </Link>
-            </li>
+            {content.footer.links.map((link) => (
+              <li key={link.href}>
+                <Link href={localizePath(locale, link.href)} className={footerLinkClass}>
+                  {link.label}
+                </Link>
+              </li>
+            ))}
           </ul>
         </nav>
         <nav aria-labelledby="footer-customer-care-heading">
@@ -58,12 +47,12 @@ export function Footer({ shopName = "CORE" }: { shopName?: string }) {
           </h2>
           <ul role="list" className="flex flex-col gap-2">
             <li>
-              <Link href="/search" className={footerLinkClass}>
+              <Link href={localizePath(locale, "/search")} className={footerLinkClass}>
                 {content.footer.search}
               </Link>
             </li>
             <li>
-              <Link href="/cart" className={footerLinkClass}>
+              <Link href={localizePath(locale, "/cart")} className={footerLinkClass}>
                 {content.cart.title}
               </Link>
             </li>
@@ -79,6 +68,9 @@ export function Footer({ shopName = "CORE" }: { shopName?: string }) {
             </span>
             <span className="border-border text-on-surface-secondary rounded-sm border px-2 py-1 text-xs">
               Mastercard
+            </span>
+            <span className="border-border text-on-surface-secondary rounded-sm border px-2 py-1 text-xs">
+              PayPal
             </span>
             <span className="border-border text-on-surface-secondary rounded-sm border px-2 py-1 text-xs">
               Shop Pay

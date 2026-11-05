@@ -13,9 +13,11 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect } from "react";
 
 import { Breadcrumbs } from "@/components/Breadcrumbs";
+import { useI18n } from "@/components/I18nProvider";
 import { ProductCard, type ProductCardData } from "@/components/ProductCard";
+import { ProductTable, type ProductRowData } from "@/components/ProductTable";
 import { AnalyticsEvent, getAnalytics } from "@/lib/analytics";
-import { content } from "@/lib/content";
+import { interpolate, type Content } from "@/lib/content";
 import { FilterGroup } from "@/lib/filters";
 import { formatPrice } from "@/lib/money";
 import type { CollectionAvailableFilter, SearchAvailableFilter } from "@/lib/queries";
@@ -32,26 +34,40 @@ import type { CollectionAvailableFilter, SearchAvailableFilter } from "@/lib/que
  * the RSC payload catches up when the client URL is ahead.
  * Browse forms carry `method="get"` + explicit `action` (feedback Round 4 #4)
  * so they submit without JS (F4).
+ *
+ * Collections render as an ordering table (`ProductTable`); search results
+ * keep the product card grid.
  */
-export const COLLECTION_SORT_OPTIONS = [
-  { label: "Featured", value: getSortByValue("COLLECTION_DEFAULT", false) },
-  { label: "Best selling", value: getSortByValue("BEST_SELLING", false) },
-  { label: "Alphabetically, A-Z", value: getSortByValue("TITLE", false) },
-  { label: "Alphabetically, Z-A", value: getSortByValue("TITLE", true) },
-  { label: "Price, low to high", value: getSortByValue("PRICE", false) },
-  { label: "Price, high to low", value: getSortByValue("PRICE", true) },
-  { label: "Date, new to old", value: getSortByValue("CREATED", true) },
-];
+type SortLabels = Content["collection"]["sortOptions"];
 
-export const SEARCH_SORT_OPTIONS = [
-  { label: "Relevance", value: getSortByValue("RELEVANCE", false) },
-  { label: "Price, low to high", value: getSortByValue("PRICE", false) },
-  { label: "Price, high to low", value: getSortByValue("PRICE", true) },
-];
+function collectionSortOptions(labels: SortLabels) {
+  return [
+    { label: labels.featured, value: getSortByValue("COLLECTION_DEFAULT", false) },
+    { label: labels.bestSelling, value: getSortByValue("BEST_SELLING", false) },
+    { label: labels.titleAsc, value: getSortByValue("TITLE", false) },
+    { label: labels.titleDesc, value: getSortByValue("TITLE", true) },
+    { label: labels.priceAsc, value: getSortByValue("PRICE", false) },
+    { label: labels.priceDesc, value: getSortByValue("PRICE", true) },
+    { label: labels.createdDesc, value: getSortByValue("CREATED", true) },
+  ];
+}
+
+function searchSortOptions(labels: SortLabels) {
+  return [
+    { label: labels.relevance, value: getSortByValue("RELEVANCE", false) },
+    { label: labels.priceAsc, value: getSortByValue("PRICE", false) },
+    { label: labels.priceDesc, value: getSortByValue("PRICE", true) },
+  ];
+}
 
 const registerSearchField = createPredictiveSearchFormRegister();
 
-type PageInfo = { hasNextPage: boolean; endCursor?: string | null };
+type PageInfo = {
+  hasNextPage: boolean;
+  hasPreviousPage?: boolean;
+  startCursor?: string | null;
+  endCursor?: string | null;
+};
 type BrowserAvailableFilter = CollectionAvailableFilter | SearchAvailableFilter;
 
 export type CollectionBrowserProps =
@@ -65,10 +81,12 @@ export type CollectionBrowserProps =
         description?: string | null;
         descriptionHtml?: string | null;
       };
-      products: ProductCardData[];
+      products: ProductRowData[];
       availableFilters: CollectionAvailableFilter[];
       pageInfo: PageInfo;
       dataSearch: string;
+      /** Show stock counts in the table (needs inventory access). */
+      showStock: boolean;
     }
   | {
       mode: "search";
@@ -136,12 +154,13 @@ function SearchViewedTracker({ term, totalCount }: { term: string; totalCount: n
 type CollectionPageProps = Extract<CollectionBrowserProps, { mode: "collection" }>;
 
 function CollectionPage(props: CollectionPageProps) {
-  const { collection, products, availableFilters, pageInfo } = props;
+  const { collection, products, availableFilters, pageInfo, showStock } = props;
+  const { locale, content, href } = useI18n();
   const state = useCollection();
   const { formProps } = useCollectionForm();
   const router = useRouter();
   const isLoading = state.status === "loading";
-  const collectionPath = `/collections/${collection.handle}`;
+  const collectionPath = href(`/collections/${collection.handle}`);
   // `<Link>` navigations (active-filter chips, clear-all, load-more) update the
   // URL but, under Cache Components / PPR, the RSC payload doesn't re-fetch on a
   // same-segment `searchParams` change unless we explicitly refresh. `onChange`
@@ -150,17 +169,21 @@ function CollectionPage(props: CollectionPageProps) {
   // (hydrogen-collection-browser/references/nextjs.md).
   const onNavigate = () => router.refresh();
 
-  const showingCount = content.collection.showingCountPartial.replace(
-    "{{ shown }}",
-    String(products.length),
-  );
-  const currencyCode = products[0]?.priceRange.minVariantPrice.currencyCode ?? "USD";
+  const showingCount = interpolate(content.collection.showingCountPartial, {
+    shown: products.length,
+  });
+  const currencyCode =
+    products[0]?.selectedOrFirstAvailableVariant?.price.currencyCode ?? "USD";
 
   return (
     <div className="max-w-page px-margin mx-auto w-full py-8">
       <div className="mb-6">
         <Breadcrumbs
-          items={[{ label: "Collections", href: "/collections" }, { label: collection.title }]}
+          locale={locale}
+          items={[
+            { label: content.collection.breadcrumb, href: "/collections" },
+            { label: collection.title },
+          ]}
         />
       </div>
 
@@ -195,7 +218,10 @@ function CollectionPage(props: CollectionPageProps) {
             <p className="type-body-sm text-on-surface-secondary" aria-live="polite">
               {showingCount}
             </p>
-            <SortSelect isLoading={isLoading} options={COLLECTION_SORT_OPTIONS} />
+            <SortSelect
+              isLoading={isLoading}
+              options={collectionSortOptions(content.collection.sortOptions)}
+            />
           </div>
 
           <ActiveFilterChips
@@ -210,23 +236,21 @@ function CollectionPage(props: CollectionPageProps) {
               {content.collection.noProducts}
             </p>
           ) : (
-            <ul
-              role="list"
-              className="grid grid-cols-2 gap-x-1 gap-y-10 contain-paint lg:grid-cols-3"
-            >
-              {products.map((product, index) => (
-                <li key={product.id} className={isLoading ? "opacity-60" : ""}>
-                  <ProductCard
-                    product={product}
-                    loading={index < 3 ? "eager" : "lazy"}
-                    fetchPriority={index === 0 ? "high" : "auto"}
-                  />
-                </li>
-              ))}
-            </ul>
+            <ProductTable
+              products={products}
+              collectionTitle={collection.title}
+              showStock={showStock}
+              isLoading={isLoading}
+            />
           )}
 
-          <LoadMore pageInfo={pageInfo} collectionPath={collectionPath} onNavigate={onNavigate} />
+          <Pagination
+            pageInfo={pageInfo}
+            basePath={collectionPath}
+            search={searchWithoutCursor(state.filters, state.sortKey, state.reverse)}
+            onNavigate={onNavigate}
+            labels={content.collection}
+          />
 
           {/* No-JS submit so the GET filter/sort form is submittable without JS (F4). */}
           <noscript>
@@ -244,6 +268,7 @@ type SearchPageProps = Extract<CollectionBrowserProps, { mode: "search" }>;
 
 function SearchPage(props: SearchPageProps) {
   const { term, products, availableFilters, pageInfo, totalCount } = props;
+  const { locale, content, href } = useI18n();
   const state = useCollection();
   const { formProps } = useCollectionForm();
   const router = useRouter();
@@ -254,13 +279,18 @@ function SearchPage(props: SearchPageProps) {
   return (
     <div className="max-w-page px-margin mx-auto w-full py-8">
       <div className="mb-6">
-        <Breadcrumbs items={[{ label: content.search.title }]} />
+        <Breadcrumbs locale={locale} items={[{ label: content.search.title }]} />
       </div>
 
       <h1 className="type-display mb-6">{content.search.title}</h1>
 
       {/* Search header form — real GET /search so it works without JS (F4). */}
-      <form action="/search" method="get" role="search" className="mb-8 flex items-center gap-2">
+      <form
+        action={href("/search")}
+        method="get"
+        role="search"
+        className="mb-8 flex items-center gap-2"
+      >
         <label htmlFor="search-q" className="sr-only">
           {content.search.label}
         </label>
@@ -280,7 +310,7 @@ function SearchPage(props: SearchPageProps) {
         </button>
         {term ? (
           <Link
-            href="/search"
+            href={href("/search")}
             className="text-on-surface-secondary hover:text-on-surface text-sm no-underline"
           >
             {content.search.clear}
@@ -291,7 +321,7 @@ function SearchPage(props: SearchPageProps) {
       {!term ? null : products.length === 0 ? (
         <div className="py-12 text-center">
           <p className="type-body text-on-surface">
-            {content.search.noResults.replace("{{ terms }}", `\u201c${term}\u201d`)}
+            {interpolate(content.search.noResults, { terms: `\u201c${term}\u201d` })}
           </p>
           <p className="text-on-surface-secondary mt-2 text-sm">
             {content.search.noResultsSuggestion}
@@ -301,7 +331,7 @@ function SearchPage(props: SearchPageProps) {
         <form
           {...formProps()}
           method="get"
-          action="/search"
+          action={href("/search")}
           className="lg:grid lg:grid-cols-[240px_1fr] lg:gap-8"
           key={`search-${term}`}
         >
@@ -342,11 +372,15 @@ function SearchPage(props: SearchPageProps) {
           <div key="results" className="flex flex-col gap-4">
             <div className="flex items-center justify-between gap-4">
               <p className="type-body-sm text-on-surface-secondary" aria-live="polite">
-                {content.search.resultsFor
-                  .replace("{{ count }}", String(totalCount))
-                  .replace("{{ terms }}", `\u201c${term}\u201d`)}
+                {interpolate(content.search.resultsFor, {
+                  count: totalCount,
+                  terms: `\u201c${term}\u201d`,
+                })}
               </p>
-              <SortSelect isLoading={isLoading} options={SEARCH_SORT_OPTIONS} />
+              <SortSelect
+                isLoading={isLoading}
+                options={searchSortOptions(content.collection.sortOptions)}
+              />
             </div>
 
             <ul
@@ -357,6 +391,7 @@ function SearchPage(props: SearchPageProps) {
                 <li key={product.id} className={isLoading ? "opacity-60" : ""}>
                   <ProductCard
                     product={product}
+                    locale={locale}
                     loading={index < 3 ? "eager" : "lazy"}
                     fetchPriority={index === 0 ? "high" : "auto"}
                   />
@@ -367,7 +402,9 @@ function SearchPage(props: SearchPageProps) {
             {pageInfo.hasNextPage ? (
               <div className="mt-8 text-center">
                 <Link
-                  href={`/search?q=${encodeURIComponent(term)}&after=${encodeURIComponent(pageInfo.endCursor ?? "")}`}
+                  href={href(
+                    `/search?q=${encodeURIComponent(term)}&after=${encodeURIComponent(pageInfo.endCursor ?? "")}`,
+                  )}
                   onClick={onNavigate}
                   className="rounded-button button-outline inline-flex h-11 items-center justify-center px-5 text-sm font-medium no-underline"
                 >
@@ -391,6 +428,7 @@ function SearchPage(props: SearchPageProps) {
 type SortOption = { label: string; value: string };
 
 function SortSelect({ isLoading, options }: { isLoading: boolean; options: SortOption[] }) {
+  const { content } = useI18n();
   const state = useCollection();
   const currentSort = state.sortKey
     ? getSortByValue(state.sortKey, state.reverse)
@@ -427,6 +465,7 @@ function FilterSidebar({
   isLoading: boolean;
   currencyCode: string;
 }) {
+  const { content } = useI18n();
   if (availableFilters.length === 0) return null;
 
   const filterGroups = availableFilters.map((filter) => (
@@ -475,12 +514,14 @@ function ActiveFilterChips({
   onNavigate: () => void;
   currencyCode: string;
 }) {
+  const { content, tag } = useI18n();
   if (activeFilters.length === 0) return null;
+  const describe = (filter: ProductFilter) => describeFilter(filter, content, tag, currencyCode);
 
   return (
     <ul role="list" className="flex flex-wrap gap-2">
       {activeFilters
-        .filter((filter) => describeFilter(filter, currencyCode) !== "")
+        .filter((filter) => describe(filter) !== "")
         .map((filter, index) => {
           const currentParams = serializeCollectionParams({
             filters: activeFilters,
@@ -489,13 +530,13 @@ function ActiveFilterChips({
           });
           const removal = getFilterRemovalUrl(currentParams, filter);
           const href = removal === "?" ? collectionPath : `${collectionPath}${removal}`;
-          const filterLabel = describeFilter(filter, currencyCode);
+          const filterLabel = describe(filter);
           return (
             <li key={`${filter.toString()}-${index}`}>
               <Link
                 href={href}
                 onClick={onNavigate}
-                aria-label={`Remove filter: ${filterLabel}`}
+                aria-label={interpolate(content.collection.removeFilter, { filter: filterLabel })}
                 className="chip-filled inline-flex items-center gap-1 rounded-full px-3 py-1 text-sm no-underline"
               >
                 <span aria-hidden="true">{filterLabel}</span>
@@ -517,8 +558,14 @@ function ActiveFilterChips({
   );
 }
 
-function describeFilter(filter: ProductFilter, currencyCode = "USD"): string {
-  if (filter.available !== undefined) return filter.available ? "In stock" : "Out of stock";
+function describeFilter(
+  filter: ProductFilter,
+  content: Content,
+  tag: string,
+  currencyCode = "USD",
+): string {
+  if (filter.available !== undefined)
+    return filter.available ? content.collection.inStock : content.collection.outOfStock;
   if (filter.productType) return filter.productType;
   if (filter.productVendor) return filter.productVendor;
   if (filter.tag) return filter.tag;
@@ -533,38 +580,76 @@ function describeFilter(filter: ProductFilter, currencyCode = "USD"): string {
     const max = price.max;
     const hasMin = min != null && Number(min) > 0;
     const hasMax = max != null;
-    const format = (value: string | number) => formatPrice({ amount: String(value), currencyCode });
+    const format = (value: string | number) =>
+      formatPrice({ amount: String(value), currencyCode }, tag);
     if (hasMin && hasMax && min != null && max != null)
       return `${format(min)} ${content.collection.priceTo} ${format(max)}`;
-    if (hasMax && max != null) return `Up to ${format(max)}`;
-    if (hasMin && min != null) return `From ${format(min)}`;
-    return "Price";
+    if (hasMax && max != null) return interpolate(content.collection.priceUpTo, { price: format(max) });
+    if (hasMin && min != null) return interpolate(content.collection.priceFrom, { price: format(min) });
+    return content.collection.price;
   }
   return "";
 }
 
-function LoadMore({
+/** Collection filters + sort as a query string, without the page cursor. */
+function searchWithoutCursor(
+  filters: ProductFilter[],
+  sortKey: Parameters<typeof serializeCollectionParams>[0]["sortKey"],
+  reverse: boolean,
+): string {
+  return serializeCollectionParams({ filters, sortKey, reverse }).toString();
+}
+
+/**
+ * Previous/next page links. The Storefront API pages by cursor, so pages are
+ * `?after=<endCursor>` (forward) and `?before=<startCursor>` (back), keeping
+ * the active filters and sort.
+ */
+function Pagination({
   pageInfo,
-  collectionPath,
+  basePath,
+  search,
   onNavigate,
+  labels,
 }: {
   pageInfo: PageInfo;
-  collectionPath: string;
+  basePath: string;
+  search: string;
   onNavigate: () => void;
+  labels: { previousPage: string; loadMore: string };
 }) {
-  if (!pageInfo.hasNextPage) return null;
-  const cursor = pageInfo.endCursor ?? "";
-  const href = `${collectionPath}?after=${encodeURIComponent(cursor)}`;
+  if (!pageInfo.hasNextPage && !pageInfo.hasPreviousPage) return null;
+
+  const pageHref = (cursorName: "after" | "before", cursor: string) => {
+    const params = new URLSearchParams(search);
+    params.set(cursorName, cursor);
+    return `${basePath}?${params.toString()}`;
+  };
+  const linkClassName =
+    "rounded-button button-outline focus-visible:outline-accent inline-flex h-11 items-center justify-center px-5 text-sm font-medium no-underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2";
 
   return (
-    <div className="mt-8 text-center">
-      <Link
-        href={href}
-        onClick={onNavigate}
-        className="rounded-button button-outline focus-visible:outline-accent inline-flex h-11 items-center justify-center px-5 text-sm font-medium no-underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
-      >
-        {content.collection.loadMore}
-      </Link>
-    </div>
+    <nav className="mt-8 flex items-center justify-center gap-3">
+      {pageInfo.hasPreviousPage && pageInfo.startCursor ? (
+        <Link
+          href={pageHref("before", pageInfo.startCursor)}
+          onClick={onNavigate}
+          rel="prev"
+          className={linkClassName}
+        >
+          {labels.previousPage}
+        </Link>
+      ) : null}
+      {pageInfo.hasNextPage && pageInfo.endCursor ? (
+        <Link
+          href={pageHref("after", pageInfo.endCursor)}
+          onClick={onNavigate}
+          rel="next"
+          className={linkClassName}
+        >
+          {labels.loadMore}
+        </Link>
+      ) : null}
+    </nav>
   );
 }

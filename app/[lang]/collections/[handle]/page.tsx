@@ -5,43 +5,52 @@ import { cacheLife, cacheTag } from "next/cache";
 import { notFound } from "next/navigation";
 
 import { CollectionBrowser } from "@/components/CollectionBrowser";
+import { getContent } from "@/lib/content";
+import { localeAlternates, localizePath, type Locale } from "@/lib/i18n";
+import { resolveLocale } from "@/lib/locale-params";
 import { COLLECTION_QUERY, type CollectionAvailableFilter } from "@/lib/queries";
 import { canonicalUrl } from "@/lib/site";
-import { staticStorefrontClient } from "@/lib/storefront-static";
+import { hasInventoryAccess } from "@/lib/storefront-config";
+import { getStaticStorefrontClient } from "@/lib/storefront-static";
 import { toURLSearchParams } from "@/lib/url-params";
 
-type Props = {
-  params: Promise<{ handle: string }>;
-  searchParams: Promise<Record<string, string | string[] | undefined>>;
-};
+/** Rows per collection table page. */
+const PAGE_SIZE = 24;
+
+type Props = PageProps<"/[lang]/collections/[handle]">;
+
+/** Cursor position from the URL: `?after=` pages forward, `?before=` pages back. */
+type Cursor = { after?: string; before?: string };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const locale = await resolveLocale(params);
   const { handle } = await params;
-  const { collection } = await fetchCollection(handle, undefined, "");
-  const title = collection?.title ?? "Collection";
+  const { collection } = await fetchCollection(locale, handle, {}, "");
+  const title = collection?.title ?? getContent(locale).collection.breadcrumb;
   const description = collection?.description ?? "";
   return {
     title,
     description,
-    alternates: { canonical: `/collections/${handle}` },
+    alternates: localeAlternates(locale, `/collections/${handle}`),
     openGraph: {
       title,
       description,
       type: "website",
-      url: canonicalUrl(`/collections/${handle}`),
+      url: canonicalUrl(localizePath(locale, `/collections/${handle}`)),
     },
   };
 }
 
 async function fetchCollection(
+  locale: Locale,
   handle: string,
-  after: string | undefined,
+  cursor: Cursor,
   searchString: string,
 ): Promise<{
   collection: Awaited<ReturnType<typeof query>>["collection"] | null;
   products: Awaited<ReturnType<typeof query>>["products"];
   availableFilters: CollectionAvailableFilter[];
-  pageInfo: { hasNextPage: boolean; endCursor?: string | null };
+  pageInfo: Awaited<ReturnType<typeof query>>["pageInfo"];
 }> {
   "use cache";
   cacheLife("minutes");
@@ -51,22 +60,25 @@ async function fetchCollection(
   // serializes arguments, so a URLSearchParams passed in loses `.get` — pass a
   // plain string across the cache boundary and parse inside.
   const browse = parseCollectionParams(new URLSearchParams(searchString));
-  const result = await query(handle, after, browse.filters, browse.sortKey, browse.reverse);
-  return result;
+  return query(locale, handle, cursor, browse.filters, browse.sortKey, browse.reverse);
 }
 
 async function query(
+  locale: Locale,
   handle: string,
-  after: string | undefined,
+  cursor: Cursor,
   filters: ReturnType<typeof parseCollectionParams>["filters"],
   sortKey: ReturnType<typeof parseCollectionParams>["sortKey"],
   reverse: boolean,
 ) {
-  const { data, errors } = await staticStorefrontClient.graphql(COLLECTION_QUERY, {
+  const page = cursor.before
+    ? { last: PAGE_SIZE, before: cursor.before }
+    : { first: PAGE_SIZE, after: cursor.after };
+  const { data, errors } = await getStaticStorefrontClient(locale).graphql(COLLECTION_QUERY, {
     variables: {
       handle,
-      first: 24,
-      after,
+      ...page,
+      withInventory: hasInventoryAccess(),
       filters:
         filters.length > 0
           ? // F13: skill-sanctioned generated-type cast at the query variable
@@ -87,18 +99,28 @@ async function query(
     collection,
     products: collection?.products.nodes ?? [],
     availableFilters: collection?.products.filters ?? [],
-    pageInfo: collection?.products.pageInfo ?? { hasNextPage: false },
+    pageInfo: collection?.products.pageInfo ?? {
+      hasNextPage: false,
+      hasPreviousPage: false,
+      startCursor: null,
+      endCursor: null,
+    },
   };
 }
 
 export default async function CollectionPage({ params, searchParams }: Props) {
+  const locale = await resolveLocale(params);
   const { handle } = await params;
   const urlSearch = toURLSearchParams(await searchParams);
-  const after = urlSearch.get("after") ?? undefined;
+  const cursor: Cursor = {
+    after: urlSearch.get("after") ?? undefined,
+    before: urlSearch.get("before") ?? undefined,
+  };
 
   const { collection, products, availableFilters, pageInfo } = await fetchCollection(
+    locale,
     handle,
-    after,
+    cursor,
     urlSearch.toString(),
   );
 
@@ -123,6 +145,7 @@ export default async function CollectionPage({ params, searchParams }: Props) {
       availableFilters={availableFilters}
       pageInfo={pageInfo}
       dataSearch={urlSearch.toString()}
+      showStock={hasInventoryAccess()}
     />
   );
 }

@@ -4,21 +4,30 @@ import type { Metadata } from "next";
 import { cacheLife, cacheTag } from "next/cache";
 
 import { CollectionBrowser } from "@/components/CollectionBrowser";
+import { getContent } from "@/lib/content";
+import { localeAlternates, localizePath, type Locale } from "@/lib/i18n";
+import { resolveLocale } from "@/lib/locale-params";
 import { SEARCH_QUERY, type SearchAvailableFilter } from "@/lib/queries";
 import { canonicalUrl } from "@/lib/site";
-import { staticStorefrontClient } from "@/lib/storefront-static";
+import { getStaticStorefrontClient } from "@/lib/storefront-static";
 import { toURLSearchParams } from "@/lib/url-params";
 
-export const metadata: Metadata = {
-  title: "Search",
-  description: "Search products",
-  alternates: { canonical: "/search" },
-  openGraph: {
-    title: "Search",
-    type: "website",
-    url: canonicalUrl("/search"),
-  },
-};
+export async function generateMetadata({
+  params,
+}: PageProps<"/[lang]/search">): Promise<Metadata> {
+  const locale = await resolveLocale(params);
+  const content = getContent(locale);
+  return {
+    title: content.search.title,
+    description: content.search.description,
+    alternates: localeAlternates(locale, "/search"),
+    openGraph: {
+      title: content.search.title,
+      type: "website",
+      url: canonicalUrl(localizePath(locale, "/search")),
+    },
+  };
+}
 
 type SearchResult = {
   term: string;
@@ -35,7 +44,11 @@ type SearchNode = NonNullable<
 >["nodes"][number];
 type SearchProductNode = Extract<SearchNode, { __typename: "Product" }>;
 
-async function fetchSearch(term: string, searchString: string): Promise<SearchResult> {
+async function fetchSearch(
+  locale: Locale,
+  term: string,
+  searchString: string,
+): Promise<SearchResult> {
   "use cache";
   cacheLife("minutes");
   cacheTag("products");
@@ -59,7 +72,7 @@ async function fetchSearch(term: string, searchString: string): Promise<SearchRe
   // supports PRICE/RELEVANCE. Map unsupported sorts back to RELEVANCE.
   const searchSortKey = browse.sortKey === "PRICE" ? "PRICE" : "RELEVANCE";
 
-  const { data, errors } = await staticStorefrontClient.graphql(SEARCH_QUERY, {
+  const { data, errors } = await getStaticStorefrontClient(locale).graphql(SEARCH_QUERY, {
     variables: {
       query: term,
       first: 24,
@@ -96,14 +109,11 @@ async function fetchSearch(term: string, searchString: string): Promise<SearchRe
   };
 }
 
-export default async function SearchPage({
-  searchParams,
-}: {
-  searchParams: Promise<Record<string, string | string[] | undefined>>;
-}) {
+export default async function SearchPage({ params, searchParams }: PageProps<"/[lang]/search">) {
+  const locale = await resolveLocale(params);
   const urlSearch = toURLSearchParams(await searchParams);
   const term = urlSearch.get("q")?.trim() ?? "";
-  const result = await fetchSearch(term, urlSearch.toString());
+  const result = await fetchSearch(locale, term, urlSearch.toString());
 
   return (
     <CollectionBrowser

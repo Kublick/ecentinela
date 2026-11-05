@@ -5,11 +5,13 @@ import { Suspense } from "react";
 
 import { useSuspenseCart } from "@/lib/cart";
 import { CART_DRAWER_ID, closeCartDrawer, configureOpenCartAction } from "@/lib/cart-drawer";
-import { content } from "@/lib/content";
+import { plural } from "@/lib/content";
 
 import { CartContent } from "./CartContent";
+import { useI18n } from "./I18nProvider";
 
 export function CartDrawer() {
+  const { content } = useI18n();
   return (
     <dialog
       id={CART_DRAWER_ID}
@@ -17,7 +19,7 @@ export function CartDrawer() {
       aria-labelledby="cart-drawer-title"
       closedby="any"
     >
-      <Suspense fallback={<div role="status">Loading cart...</div>}>
+      <Suspense fallback={<div role="status">{content.cart.loading}</div>}>
         <CartDrawerInner />
       </Suspense>
     </dialog>
@@ -35,6 +37,7 @@ export function CartDrawer() {
 function CartDrawerInner() {
   // Ensure the Standard Actions `openCart` handler is registered on the client.
   configureOpenCartAction();
+  const { content } = useI18n();
 
   const totalQuantity = useSuspenseCart((state) => state.data.totalQuantity);
   const isEmpty = totalQuantity === 0;
@@ -47,7 +50,7 @@ function CartDrawerInner() {
           <h2 id="cart-drawer-title" className="text-on-surface text-lg font-medium">
             {content.cart.title}{" "}
             <span className="text-on-surface-secondary text-sm font-normal">
-              {totalQuantity} {totalQuantity === 1 ? "item" : "items"}
+              {plural(content.cart.items, totalQuantity)}
             </span>
           </h2>
         </div>

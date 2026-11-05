@@ -3,12 +3,13 @@ import { getCache } from "@vercel/functions";
 import { NextResponse, type NextFetchEvent, type NextRequest } from "next/server";
 
 import { cartHandlers } from "@/lib/cart-handlers";
-import { defaultI18n } from "@/lib/config";
 import {
   createCustomerSessionManager,
   createEphemeralSessionManager,
 } from "@/lib/customer-account";
 import { getCustomerSessionHandlers } from "@/lib/customer-session-handlers";
+import { DEFAULT_LOCALE, LOCALE_MARKETS, localeFromPathname } from "@/lib/i18n";
+import { getMarket, localeFromUrl } from "@/lib/markets";
 import { predictiveSearchHandlers } from "@/lib/predictive-search-handlers";
 import { routeTemplates } from "@/lib/route-templates";
 import { createRequestStorefrontClient } from "@/lib/storefront-client";
@@ -29,8 +30,20 @@ import { isCustomerAccountsAvailable, resolveStorefrontConfig } from "@/lib/stor
  * mock.shop fallback: when no `PRIVATE_STOREFRONT_API_TOKEN` is present, the
  * shared `resolveStorefrontConfig()` falls back to `mock.shop` with tokenless
  * public access so the example runs with zero secrets.
+ *
+ * Locale routing (`lib/i18n.ts`) runs after the Hydrogen routes: every page
+ * lives under `app/[lang]`, so unprefixed paths are rewritten to `/es/...`,
+ * `/en/...` passes through, and `/es/...` redirects to the unprefixed URL.
  */
 export async function proxy(request: NextRequest, event: NextFetchEvent) {
+  const { pathname } = request.nextUrl;
+
+  // Hydrogen API routes (`/api/cart`, `/api/predictive-search`) are called from
+  // pages, so their language comes from the page URL in `Referer`.
+  const locale = pathname.startsWith("/api/")
+    ? localeFromUrl(request.headers.get("referer"))
+    : localeFromPathname(pathname);
+
   const cache: CacheInstance | undefined = process.env.VERCEL
     ? getCache({
         namespace: "hydrogen-v1",
@@ -43,7 +56,7 @@ export async function proxy(request: NextRequest, event: NextFetchEvent) {
   const storefrontClient = createRequestStorefrontClient({
     config: resolveStorefrontConfig(),
     request,
-    i18n: defaultI18n,
+    i18n: getMarket(locale),
     cache,
     waitUntil: event.waitUntil.bind(event),
   });
@@ -76,12 +89,42 @@ export async function proxy(request: NextRequest, event: NextFetchEvent) {
     return shopifyRoute;
   }
 
+  // `/es/...` is the internal path of the unprefixed URL: send it there.
+  const defaultPrefix = `/${DEFAULT_LOCALE}`;
+  if (pathname === defaultPrefix || pathname.startsWith(`${defaultPrefix}/`)) {
+    const url = request.nextUrl.clone();
+    url.pathname = pathname.slice(defaultPrefix.length) || "/";
+    return NextResponse.redirect(url, 308);
+  }
+
   // Forward the original URL (via `x-storefront-url`) + request context headers
   // to Server Components, then merge SFAPI response headers onto the response.
   const requestHeaders = requestContext.getForwardedRequestHeaders();
-  const response = NextResponse.next({ request: { headers: requestHeaders } });
+  const response = needsDefaultLocaleRewrite(pathname)
+    ? NextResponse.rewrite(rewriteToDefaultLocale(request), { request: { headers: requestHeaders } })
+    : NextResponse.next({ request: { headers: requestHeaders } });
   requestContext.applyResponseHeaders(response.headers);
   return response;
+}
+
+/**
+ * Unprefixed page paths render the default locale. API routes, metadata routes
+ * and files in `public/` (anything with an extension) are left alone, as are
+ * paths that already carry a non-default locale prefix.
+ */
+function needsDefaultLocaleRewrite(pathname: string) {
+  if (pathname.startsWith("/api/") || /\.[a-z0-9]+$/i.test(pathname)) return false;
+  for (const market of Object.values(LOCALE_MARKETS)) {
+    const prefix = market.pathPrefix;
+    if (prefix && (pathname === prefix || pathname.startsWith(`${prefix}/`))) return false;
+  }
+  return true;
+}
+
+function rewriteToDefaultLocale(request: NextRequest) {
+  const url = request.nextUrl.clone();
+  url.pathname = `/${DEFAULT_LOCALE}${request.nextUrl.pathname === "/" ? "" : request.nextUrl.pathname}`;
+  return url;
 }
 
 export const config = {

@@ -1,6 +1,6 @@
 import { gql, type StorefrontApi } from "@shopify/hydrogen";
 
-import { COLLECTION_CARD_FRAGMENT, PRODUCT_CARD_FRAGMENT } from "./fragments";
+import { COLLECTION_CARD_FRAGMENT, PRODUCT_CARD_FRAGMENT, PRODUCT_ROW_FRAGMENT } from "./fragments";
 
 /**
  * Home query — best-selling products (first 8) + featured collections (first 3).
@@ -45,13 +45,13 @@ export const COLLECTIONS_QUERY = gql(
 );
 
 /**
- * Collection PLP query. `filters` and `sortKey`/`reverse` come from
- * `parseCollectionParams`. The `__typename` discipline is on `ProductCard`
- * (no unions here).
+ * Collection PLP query, rendered as an ordering table (`ProductTable`).
+ * `filters` and `sortKey`/`reverse` come from `parseCollectionParams`. Pages
+ * forward with `first`/`after` and back with `last`/`before`.
  */
 export const COLLECTION_QUERY = gql(
   `
-  query Collection($handle: String!, $first: Int!, $after: String, $sortKey: ProductCollectionSortKeys, $reverse: Boolean, $filters: [ProductFilter!], $country: CountryCode, $language: LanguageCode)
+  query Collection($handle: String!, $first: Int, $after: String, $last: Int, $before: String, $sortKey: ProductCollectionSortKeys, $reverse: Boolean, $filters: [ProductFilter!], $withInventory: Boolean!, $country: CountryCode, $language: LanguageCode)
   @inContext(country: $country, language: $language) {
     collection(handle: $handle) {
       id
@@ -65,7 +65,7 @@ export const COLLECTION_QUERY = gql(
         width
         height
       }
-      products(first: $first, after: $after, sortKey: $sortKey, reverse: $reverse, filters: $filters) {
+      products(first: $first, after: $after, last: $last, before: $before, sortKey: $sortKey, reverse: $reverse, filters: $filters) {
         filters {
           id
           label
@@ -91,16 +91,18 @@ export const COLLECTION_QUERY = gql(
         }
         pageInfo {
           hasNextPage
+          hasPreviousPage
+          startCursor
           endCursor
         }
         nodes {
-          ...ProductCard
+          ...ProductRow
         }
       }
     }
   }
 `,
-  [PRODUCT_CARD_FRAGMENT],
+  [PRODUCT_ROW_FRAGMENT],
 );
 
 type CollectionQuery = StorefrontApi.ResultOf<typeof COLLECTION_QUERY>;

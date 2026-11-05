@@ -25,6 +25,9 @@ type QuantityStepperProps<T extends React.InputHTMLAttributes<HTMLInputElement>>
   step?: number;
   /** Class appended to the outer group. */
   className?: string;
+  /** Accessible labels for the −/+ buttons (defaults to English). */
+  decreaseLabel?: string;
+  increaseLabel?: string;
 };
 
 export function QuantityStepper<T extends React.InputHTMLAttributes<HTMLInputElement>>({
@@ -33,6 +36,8 @@ export function QuantityStepper<T extends React.InputHTMLAttributes<HTMLInputEle
   min = 1,
   step = 1,
   className = "",
+  decreaseLabel = `Decrease ${label}`,
+  increaseLabel = `Increase ${label}`,
 }: QuantityStepperProps<T>) {
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -54,7 +59,7 @@ export function QuantityStepper<T extends React.InputHTMLAttributes<HTMLInputEle
         type="button"
         onClick={() => nudge(-1)}
         className="button-icon h-8 w-9 rounded-s"
-        aria-label={`Decrease ${label}`}
+        aria-label={decreaseLabel}
       >
         –
       </button>
@@ -73,7 +78,7 @@ export function QuantityStepper<T extends React.InputHTMLAttributes<HTMLInputEle
         type="button"
         onClick={() => nudge(1)}
         className="button-icon h-8 w-9 rounded-e"
-        aria-label={`Increase ${label}`}
+        aria-label={increaseLabel}
       >
         +
       </button>

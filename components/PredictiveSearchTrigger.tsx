@@ -3,8 +3,7 @@
 import Link from "next/link";
 import { useState, useSyncExternalStore } from "react";
 
-import { content } from "@/lib/content";
-
+import { useI18n } from "./I18nProvider";
 import { PredictiveSearchModal } from "./PredictiveSearchModal";
 
 /**
@@ -13,6 +12,7 @@ import { PredictiveSearchModal } from "./PredictiveSearchModal";
  * trigger after hydration. Renders `PredictiveSearchModal` (client) when open.
  */
 export function PredictiveSearchTrigger() {
+  const { content, href } = useI18n();
   const [searchOpen, setSearchOpen] = useState(false);
   const hasHydrated = useSyncExternalStore(
     subscribeToHydration,
@@ -24,7 +24,7 @@ export function PredictiveSearchTrigger() {
     // No-JS / pre-hydration baseline: a real /search link.
     return (
       <Link
-        href="/search"
+        href={href("/search")}
         className="button-icon focus-visible:outline-accent inline-flex h-11 w-11 items-center justify-center rounded no-underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
         aria-label={content.general.search}
         data-testid="search-modal-trigger"

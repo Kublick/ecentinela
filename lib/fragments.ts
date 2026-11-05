@@ -53,6 +53,69 @@ export const PRODUCT_CARD_QUERY = gql(
 );
 
 /**
+ * Collection table row (`ProductTable`): part number, short description,
+ * vendor, datasheet, price, stock and the variant to add to cart.
+ *
+ * `quantityAvailable` needs the `unauthenticated_read_product_inventory`
+ * Storefront API scope, so it is only requested when `$withInventory` is true
+ * (`STOREFRONT_INVENTORY_ACCESS` in `.env`). The datasheet is the
+ * `custom.datasheet` product metafield (a file reference, or a URL).
+ */
+export const PRODUCT_ROW_FRAGMENT = gql(`
+  fragment ProductRow on Product {
+    id
+    handle
+    title
+    vendor
+    description(truncateAt: 180)
+    availableForSale
+    variantsCount {
+      count
+    }
+    featuredImage {
+      url
+      altText
+    }
+    datasheet: metafield(namespace: "custom", key: "datasheet") {
+      type
+      value
+      reference {
+        ... on GenericFile {
+          url
+        }
+        ... on MediaImage {
+          image {
+            url
+          }
+        }
+      }
+    }
+    selectedOrFirstAvailableVariant {
+      id
+      sku
+      title
+      availableForSale
+      currentlyNotInStock
+      quantityAvailable @include(if: $withInventory)
+      price {
+        amount
+        currencyCode
+      }
+      compareAtPrice {
+        amount
+        currencyCode
+      }
+    }
+  }
+`);
+
+/** Thin query that spreads the `ProductRow` fragment for type derivation. */
+export const PRODUCT_ROW_QUERY = gql(
+  `query ProductRowQuery($withInventory: Boolean!) { product(handle: "") { ...ProductRow } }`,
+  [PRODUCT_ROW_FRAGMENT],
+);
+
+/**
  * Shared collection-card fragment — used by the collections index and the home
  * "shop by category" grid. Pulls a single product image as a fallback when the
  * collection has no image (F5: no large fan-out for a cosmetic count).

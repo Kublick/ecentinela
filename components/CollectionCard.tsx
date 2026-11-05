@@ -2,6 +2,7 @@ import type { StorefrontApi } from "@shopify/hydrogen";
 import Link from "next/link";
 
 import type { COLLECTION_CARD_QUERY } from "@/lib/fragments";
+import { localizePath, type Locale } from "@/lib/i18n";
 import { shopifyImageUrl, srcSetFor } from "@/lib/image";
 
 /** The typed collection card node. */
@@ -11,6 +12,7 @@ export type CollectionCardData = NonNullable<
 
 type CollectionCardProps = {
   collection: CollectionCardData;
+  locale: Locale;
   loading?: "eager" | "lazy";
   fetchPriority?: "high" | "low" | "auto";
 };
@@ -27,6 +29,7 @@ type CollectionCardProps = {
  */
 export function CollectionCard({
   collection,
+  locale,
   loading = "lazy",
   fetchPriority = "auto",
 }: CollectionCardProps) {
@@ -49,7 +52,7 @@ export function CollectionCard({
       </div>
       <div className="overlay-dark pointer-events-none absolute inset-0" />
       <Link
-        href={`/collections/${collection.handle}`}
+        href={localizePath(locale, `/collections/${collection.handle}`)}
         className="card-link"
         aria-label={collection.title}
       />

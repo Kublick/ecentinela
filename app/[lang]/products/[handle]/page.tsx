@@ -7,39 +7,40 @@ import { Suspense } from "react";
 import { Breadcrumbs, type Crumb } from "@/components/Breadcrumbs";
 import { ProductCard, type ProductCardData } from "@/components/ProductCard";
 import { ProductDetails } from "@/components/ProductDetails";
-import { content } from "@/lib/content";
+import { getContent } from "@/lib/content";
+import { localeAlternates, localizePath, type Locale } from "@/lib/i18n";
+import { resolveLocale } from "@/lib/locale-params";
 import { galleryImages } from "@/lib/product-gallery";
 import { PRODUCT_QUERY, RELATED_PRODUCTS_QUERY, type ProductData } from "@/lib/product-query";
 import { canonicalUrl, jsonLdScript } from "@/lib/site";
-import { staticStorefrontClient } from "@/lib/storefront-static";
+import { getStaticStorefrontClient } from "@/lib/storefront-static";
 import { toURLSearchParams } from "@/lib/url-params";
 
-type Props = {
-  params: Promise<{ handle: string }>;
-  searchParams: Promise<Record<string, string | string[] | undefined>>;
-};
+type Props = PageProps<"/[lang]/products/[handle]">;
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const locale = await resolveLocale(params);
   const { handle } = await params;
   // Re-fetch the product for metadata. It hits the same `use cache` cache-point
   // as the page render, so this is a cache hit in practice.
-  const { product } = await fetchProduct(handle, "");
-  const title = product?.title ?? "Product";
+  const { product } = await fetchProduct(locale, handle, "");
+  const title = product?.title ?? getContent(locale).product.fallbackTitle;
   return {
     title,
     description: product?.description ?? "",
     // Variant params do NOT change the canonical (F10).
-    alternates: { canonical: `/products/${handle}` },
+    alternates: localeAlternates(locale, `/products/${handle}`),
     openGraph: {
       title,
       description: product?.description ?? "",
-      url: canonicalUrl(`/products/${handle}`),
+      url: canonicalUrl(localizePath(locale, `/products/${handle}`)),
     },
     twitter: { card: "summary_large_image" },
   };
 }
 
 async function fetchProduct(
+  locale: Locale,
   handle: string,
   searchString: string,
 ): Promise<{ product: ProductData | null }> {
@@ -56,7 +57,7 @@ async function fetchProduct(
     searchParams: new URLSearchParams(searchString),
   });
 
-  const { data, errors } = await staticStorefrontClient.graphql(PRODUCT_QUERY, {
+  const { data, errors } = await getStaticStorefrontClient(locale).graphql(PRODUCT_QUERY, {
     variables: { handle, selectedOptions },
   });
 
@@ -72,7 +73,7 @@ async function fetchProduct(
  * `canonicalUrl` reads `SITE_ORIGIN`, which the browser bundle does not have, so
  * a client render hydrates with a different `offers.url` than the server sent.
  */
-function productJsonLd(product: ProductData) {
+function productJsonLd(locale: Locale, product: ProductData) {
   const variant = product.selectedOrFirstAvailableVariant;
   return {
     "@context": "https://schema.org",
@@ -88,7 +89,7 @@ function productJsonLd(product: ProductData) {
           availability: variant.availableForSale
             ? "https://schema.org/InStock"
             : "https://schema.org/OutOfStock",
-          url: canonicalUrl(`/products/${product.handle}`),
+          url: canonicalUrl(localizePath(locale, `/products/${product.handle}`)),
         }
       : {
           "@type": "AggregateOffer",
@@ -100,9 +101,11 @@ function productJsonLd(product: ProductData) {
 }
 
 export default async function ProductPage({ params, searchParams }: Props) {
+  const locale = await resolveLocale(params);
+  const content = getContent(locale);
   const { handle } = await params;
   const urlSearch = toURLSearchParams(await searchParams);
-  const { product } = await fetchProduct(handle, urlSearch.toString());
+  const { product } = await fetchProduct(locale, handle, urlSearch.toString());
 
   // 404 only when the query has no GraphQL errors and the product is missing
   // (F8: errors are logged above; don't blanket-404 on a Storefront auth error).
@@ -122,17 +125,17 @@ export default async function ProductPage({ params, searchParams }: Props) {
   return (
     <>
       <div className="max-w-page px-margin mx-auto w-full pt-8">
-        <Breadcrumbs items={breadcrumbItems} />
+        <Breadcrumbs locale={locale} items={breadcrumbItems} />
       </div>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: jsonLdScript(productJsonLd(product)) }}
+        dangerouslySetInnerHTML={{ __html: jsonLdScript(productJsonLd(locale, product)) }}
       />
       <ProductDetails product={product} />
       {/* Best-effort related products (F14): a separate async server child in a
           <Suspense> boundary that degrades silently — never blocks the PDP. */}
       <Suspense fallback={null}>
-        <RelatedProducts handle={handle} />
+        <RelatedProducts locale={locale} handle={handle} />
       </Suspense>
     </>
   );
@@ -143,14 +146,14 @@ export default async function ProductPage({ params, searchParams }: Props) {
  * error/timeout returns an empty list so the PDP never breaks. Fetched via the
  * shared `staticStorefrontClient` inside a `use cache` cache-point.
  */
-async function RelatedProducts({ handle }: { handle: string }) {
+async function RelatedProducts({ locale, handle }: { locale: Locale; handle: string }) {
   "use cache";
   cacheLife("minutes");
   cacheTag("products");
 
   let related: ProductCardData[] = [];
   try {
-    const { data, errors } = await staticStorefrontClient.graphql(RELATED_PRODUCTS_QUERY, {
+    const { data, errors } = await getStaticStorefrontClient(locale).graphql(RELATED_PRODUCTS_QUERY, {
       variables: { handle },
     });
     if (errors) {
@@ -169,11 +172,11 @@ async function RelatedProducts({ handle }: { handle: string }) {
 
   return (
     <section className="max-w-page px-margin mx-auto mt-16">
-      <h2 className="type-heading-xl mb-6">{content.product.relatedProducts}</h2>
+      <h2 className="type-heading-xl mb-6">{getContent(locale).product.relatedProducts}</h2>
       <ul role="list" className="grid grid-cols-2 gap-x-1 gap-y-10 contain-paint lg:grid-cols-4">
         {related.map((relatedProduct) => (
           <li key={relatedProduct.id}>
-            <ProductCard product={relatedProduct} loading="lazy" />
+            <ProductCard product={relatedProduct} locale={locale} loading="lazy" />
           </li>
         ))}
       </ul>

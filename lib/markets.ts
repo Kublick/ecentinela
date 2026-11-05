@@ -1,43 +1,33 @@
 import type { I18nConfig } from "@shopify/hydrogen";
 
-import { defaultI18n } from "./config";
+import { DEFAULT_LOCALE, LOCALE_MARKETS, localeFromPathname, type Locale } from "./i18n";
 
 /**
- * Markets resolver (`hydrogen-markets` / `references/nextjs.md` host-based
- * shape). Reads the forwarded storefront URL (`x-storefront-url`, set by
- * `proxy.ts` via `requestContext.getForwardedRequestHeaders()`) and resolves a
- * market from a `MARKET_BY_HOST` allowlist, defaulting to the shared config's
- * `defaultI18n` (US/EN).
+ * Markets resolver (`hydrogen-markets`). The market comes from the locale
+ * prefix of the browser-facing URL: `/en/...` → English, anything else →
+ * Spanish (see `lib/i18n.ts`). Both locales share the `MX` country.
  *
- * This is a single-market example, so the allowlist is empty (everything falls
- * back to the default) — but the helper is wired so multi-market is an
- * extension, not a rewrite. `Market` is `I18nConfig` so the resolved value is
- * directly assignable to `createShopifyRequestContext({ i18n })`.
+ * Server Components read the original URL from `x-storefront-url`, which
+ * `proxy.ts` forwards before rewriting unprefixed paths to `/es/...`.
  */
 export type Market = I18nConfig;
 
-export const DEFAULT_MARKET: Market = defaultI18n;
+export const DEFAULT_MARKET: Market = LOCALE_MARKETS[DEFAULT_LOCALE];
 
-const MARKET_BY_HOST: Record<string, Market> = {
-  // Single-market example: only the default. Add host -> market mappings here
-  // when the storefront goes multi-market (values must be valid
-  // ShopifyCountryCode / ShopifyLanguageCode pairs).
-};
+export function getMarket(locale: Locale): Market {
+  return LOCALE_MARKETS[locale];
+}
 
-export function getMarketFromHeaders(headers: Pick<Headers, "get">): Market {
-  const forwardedUrl = headers.get("x-storefront-url");
-  if (!forwardedUrl) return DEFAULT_MARKET;
-
+/** Locale of an absolute or relative URL string, defaulting to Spanish. */
+export function localeFromUrl(url: string | null | undefined): Locale {
+  if (!url) return DEFAULT_LOCALE;
   try {
-    const { hostname } = new URL(forwardedUrl);
-    const host = hostname.toLowerCase();
-    return MARKET_BY_HOST[host] ?? DEFAULT_MARKET;
+    return localeFromPathname(new URL(url, "http://localhost").pathname);
   } catch {
-    return DEFAULT_MARKET;
+    return DEFAULT_LOCALE;
   }
 }
 
-/** The static client uses the default market (no `headers()` access). */
-export function getDefaultMarket(): Market {
-  return DEFAULT_MARKET;
+export function getMarketFromHeaders(headers: Pick<Headers, "get">): Market {
+  return getMarket(localeFromUrl(headers.get("x-storefront-url")));
 }

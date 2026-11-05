@@ -9,7 +9,9 @@ import {
   openCartDrawer,
   subscribeCartDrawerOpen,
 } from "@/lib/cart-drawer";
-import { cartIconLabel, cartItemCount } from "@/lib/content";
+import { plural } from "@/lib/content";
+
+import { useI18n } from "./I18nProvider";
 
 /**
  * Cart trigger — a `<button>` that opens the cart drawer via `showModal()`
@@ -19,13 +21,14 @@ import { cartIconLabel, cartItemCount } from "@/lib/content";
  * when the drawer is unavailable.
  */
 export function CartTrigger() {
+  const { content } = useI18n();
   const totalQuantity = useCart((state) => state.data.totalQuantity);
   const cartDrawerOpen = useSyncExternalStore(
     subscribeCartDrawerOpen,
     getCartDrawerOpen,
     () => false,
   );
-  const cartLabel = cartIconLabel(totalQuantity);
+  const cartLabel = plural(content.cart.iconLabel, totalQuantity);
   const countDisplay = totalQuantity > 99 ? "99+" : String(totalQuantity);
 
   return (
@@ -42,7 +45,7 @@ export function CartTrigger() {
         <CartIcon count={totalQuantity} display={countDisplay} />
       </button>
       <span aria-live="polite" aria-atomic="true" className="sr-only">
-        {cartItemCount(totalQuantity)}
+        {plural(content.cart.itemCount, totalQuantity)}
       </span>
     </>
   );

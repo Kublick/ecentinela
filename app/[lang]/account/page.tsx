@@ -4,13 +4,18 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
 import { customerAccountConfig } from "@/lib/config";
+import { getContent, type Content } from "@/lib/content";
 import { getCustomerAccessToken } from "@/lib/customer-account";
+import { localizePath } from "@/lib/i18n";
+import { resolveLocale } from "@/lib/locale-params";
 import { isCustomerAccountsAvailable } from "@/lib/storefront-config";
 import { toURLSearchParams } from "@/lib/url-params";
 
-export const metadata: Metadata = {
-  title: "Account",
-};
+export async function generateMetadata({
+  params,
+}: PageProps<"/[lang]/account">): Promise<Metadata> {
+  return { title: getContent(await resolveLocale(params)).account.title };
+}
 
 const CUSTOMER_QUERY = gql(`
   query CurrentCustomer {
@@ -30,9 +35,7 @@ type AccountCustomer = {
   emailAddress?: { emailAddress?: string | null } | null;
 };
 
-type AccountPageProps = {
-  searchParams: Promise<Record<string, string | string[] | undefined>>;
-};
+type AccountPageProps = PageProps<"/[lang]/account">;
 
 /**
  * `/account` — core Customer Accounts surface (name + email only).
@@ -53,13 +56,15 @@ type AccountPageProps = {
  * the handler refreshes, commits the cookie on its response, and redirects
  * back to `/account`, which now reads a valid token.
  */
-export default async function AccountPage({ searchParams }: AccountPageProps) {
+export default async function AccountPage({ params, searchParams }: AccountPageProps) {
+  const locale = await resolveLocale(params);
+  const content = getContent(locale);
   const available = isCustomerAccountsAvailable(); // sync — no await
   const urlSearchParams = toURLSearchParams(await searchParams);
   const loginFailed = urlSearchParams.get("login") === "failed";
   const refreshAttempted = urlSearchParams.get("refreshed") === "1";
 
-  if (!available) return <AccountShell notice="real-store" />;
+  if (!available) return <AccountShell content={content} notice="real-store" />;
 
   const { accessToken, requestContext } = await getCustomerAccessToken();
   if (!accessToken && !loginFailed && !refreshAttempted) {
@@ -69,9 +74,10 @@ export default async function AccountPage({ searchParams }: AccountPageProps) {
     // mutation that happens during render. Refreshing in-page would break that
     // no-render-commit invariant. The handler refreshes, sets the cookie on its
     // own response, and redirects back with `refreshed=1`.
-    redirect(`/account/refresh?return_to=${encodeURIComponent("/account?refreshed=1")}`);
+    const returnTo = localizePath(locale, "/account?refreshed=1");
+    redirect(`/account/refresh?return_to=${encodeURIComponent(returnTo)}`);
   }
-  if (!accessToken) return <AccountShell loginFailed={loginFailed} />;
+  if (!accessToken) return <AccountShell content={content} loginFailed={loginFailed} />;
 
   // Build the client per-call (Next has no RR "context" equivalent; per-call
   // construction from `headers()` is the native Next approach, matching
@@ -90,67 +96,64 @@ export default async function AccountPage({ searchParams }: AccountPageProps) {
     customer = errors ? undefined : data.customer;
     error = errors?.[0]?.message;
   } catch {
-    error = "Customer Account API request failed. Try again later.";
+    error = content.account.requestFailed;
   }
 
-  return <AccountShell customer={customer} error={error} />;
+  return <AccountShell content={content} customer={customer} error={error} />;
 }
 
-type AccountShellProps =
+type AccountShellProps = { content: Content } & (
   | { notice: "real-store" }
   | { loginFailed: boolean }
-  | { customer?: AccountCustomer | null; error?: string };
+  | { customer?: AccountCustomer | null; error?: string }
+);
 
 function AccountShell(props: AccountShellProps) {
+  const { content } = props;
   return (
     <div className="max-w-page px-margin mx-auto w-full py-16" aria-labelledby="account-heading">
       <h1 id="account-heading" className="type-display mb-4">
-        Account
+        {content.account.title}
       </h1>
-      <p className="type-body-lg text-on-surface-secondary max-w-xl">
-        Sign in with Shopify Customer Accounts to view your basic account identity.
-      </p>
+      <p className="type-body-lg text-on-surface-secondary max-w-xl">{content.account.intro}</p>
 
-      {"notice" in props && <RealStoreNotice />}
-      {"loginFailed" in props && <LoginPanel loginFailed={props.loginFailed} />}
+      {"notice" in props && <RealStoreNotice content={content} />}
+      {"loginFailed" in props && <LoginPanel content={content} loginFailed={props.loginFailed} />}
       {"customer" in props &&
         (props.error ? (
           <CustomerAccountError message={props.error} />
         ) : (
-          <CustomerCard customer={props.customer} />
+          <CustomerCard content={content} customer={props.customer} />
         ))}
     </div>
   );
 }
 
-function RealStoreNotice() {
+function RealStoreNotice({ content }: { content: Content }) {
   return (
     <section
       className="border-border bg-surface mt-8 rounded border p-8"
       aria-labelledby="notice-heading"
     >
       <h2 id="notice-heading" className="type-heading-lg mb-3">
-        Customer Accounts require a real store
+        {content.account.realStoreHeading}
       </h2>
-      <p className="type-body text-on-surface-secondary max-w-xl">
-        Customer Accounts require a real store plus <code>NEXT_PUBLIC_SHOP_ID</code>,{" "}
-        <code>NEXT_PUBLIC_CUSTOMER_ACCOUNT_API_CLIENT_ID</code>, and <code>SESSION_SECRET</code>.
-      </p>
+      <p className="type-body text-on-surface-secondary max-w-xl">{content.account.realStoreBody}</p>
     </section>
   );
 }
 
-function LoginPanel({ loginFailed }: { loginFailed: boolean }) {
+function LoginPanel({ content, loginFailed }: { content: Content; loginFailed: boolean }) {
   return (
     <section
       className="border-border bg-surface mt-8 rounded border p-8"
       aria-labelledby="login-heading"
     >
       <h2 id="login-heading" className="type-heading-lg mb-3">
-        Sign in
+        {content.account.signInHeading}
       </h2>
       <p className="type-body text-on-surface-secondary mb-6 max-w-xl">
-        Use your customer account to view your name and email for this store.
+        {content.account.signInBody}
       </p>
       {loginFailed ? (
         <p
@@ -159,15 +162,17 @@ function LoginPanel({ loginFailed }: { loginFailed: boolean }) {
           autoFocus
           className="border-border bg-surface-secondary text-on-surface focus-visible:outline-accent mb-6 rounded border p-4 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
         >
-          We could not complete your login. Try signing in again.
+          {content.account.loginFailed}
         </p>
       ) : null}
-      {/* Plain `<a>` — `/account/login` is handler-intercepted in `proxy.ts`. */}
+      {/* Plain `<a>` — `/account/login` is handler-intercepted in `proxy.ts`. The
+          lint rule matches it against the dynamic `[lang]` page routes. */}
+      {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
       <a
         href="/account/login"
         className="rounded-button button-primary focus-visible:outline-accent inline-flex h-11 items-center justify-center px-5 text-sm font-medium no-underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
       >
-        Log in
+        {content.account.logIn}
       </a>
     </section>
   );
@@ -184,8 +189,16 @@ function CustomerAccountError({ message }: { message: string }) {
   );
 }
 
-function CustomerCard({ customer }: { customer?: AccountCustomer | null }) {
-  const name = [customer?.firstName, customer?.lastName].filter(Boolean).join(" ") || "Customer";
+function CustomerCard({
+  content,
+  customer,
+}: {
+  content: Content;
+  customer?: AccountCustomer | null;
+}) {
+  const name =
+    [customer?.firstName, customer?.lastName].filter(Boolean).join(" ") ||
+    content.account.customerFallback;
 
   return (
     <section
@@ -196,7 +209,7 @@ function CustomerCard({ customer }: { customer?: AccountCustomer | null }) {
         id="identity-heading"
         className="type-body text-on-surface-secondary mb-3 text-sm font-semibold tracking-[0.2em] uppercase"
       >
-        Customer identity
+        {content.account.identityHeading}
       </h2>
       <p className="type-heading-lg mb-2">{name}</p>
       {customer?.emailAddress?.emailAddress ? (
@@ -207,7 +220,7 @@ function CustomerCard({ customer }: { customer?: AccountCustomer | null }) {
           type="submit"
           className="rounded-button button-outline focus-visible:outline-accent inline-flex h-11 items-center justify-center px-5 text-sm font-medium focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
         >
-          Log out
+          {content.account.logOut}
         </button>
       </form>
     </section>

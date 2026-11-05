@@ -4,28 +4,36 @@ import Link from "next/link";
 
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { CollectionCard } from "@/components/CollectionCard";
-import { content } from "@/lib/content";
+import { getContent } from "@/lib/content";
+import { localeAlternates, localizePath, type Locale } from "@/lib/i18n";
+import { resolveLocale } from "@/lib/locale-params";
 import { COLLECTIONS_QUERY } from "@/lib/queries";
 import { canonicalUrl } from "@/lib/site";
-import { staticStorefrontClient } from "@/lib/storefront-static";
+import { getStaticStorefrontClient } from "@/lib/storefront-static";
 
-export const metadata: Metadata = {
-  title: "Collections",
-  description: "Browse all collections",
-  alternates: { canonical: "/collections" },
-  openGraph: {
-    title: "Collections",
-    type: "website",
-    url: canonicalUrl("/collections"),
-  },
-};
+export async function generateMetadata({
+  params,
+}: PageProps<"/[lang]/collections">): Promise<Metadata> {
+  const locale = await resolveLocale(params);
+  const content = getContent(locale);
+  return {
+    title: content.collections.title,
+    description: content.collections.description,
+    alternates: localeAlternates(locale, "/collections"),
+    openGraph: {
+      title: content.collections.title,
+      type: "website",
+      url: canonicalUrl(localizePath(locale, "/collections")),
+    },
+  };
+}
 
-async function fetchCollections(after?: string) {
+async function fetchCollections(locale: Locale, after?: string) {
   "use cache";
   cacheLife("hours");
   cacheTag("collections");
 
-  const { data, errors } = await staticStorefrontClient.graphql(COLLECTIONS_QUERY, {
+  const { data, errors } = await getStaticStorefrontClient(locale).graphql(COLLECTIONS_QUERY, {
     variables: { first: 24, after },
   });
   if (errors) {
@@ -38,18 +46,19 @@ async function fetchCollections(after?: string) {
 }
 
 export default async function CollectionsPage({
+  params,
   searchParams,
-}: {
-  searchParams: Promise<Record<string, string | string[] | undefined>>;
-}) {
-  const params = await searchParams;
-  const after = typeof params.after === "string" ? params.after : undefined;
-  const { collections, pageInfo } = await fetchCollections(after);
+}: PageProps<"/[lang]/collections">) {
+  const locale = await resolveLocale(params);
+  const content = getContent(locale);
+  const query = await searchParams;
+  const after = typeof query.after === "string" ? query.after : undefined;
+  const { collections, pageInfo } = await fetchCollections(locale, after);
 
   return (
     <div className="max-w-page px-margin mx-auto w-full py-8">
       <div className="mb-6">
-        <Breadcrumbs items={[{ label: content.collections.title }]} />
+        <Breadcrumbs locale={locale} items={[{ label: content.collections.title }]} />
       </div>
 
       <h1 className="type-display mb-8">{content.collections.title}</h1>
@@ -59,6 +68,7 @@ export default async function CollectionsPage({
           <li key={collection.id}>
             <CollectionCard
               collection={collection}
+              locale={locale}
               loading={index < 3 ? "eager" : "lazy"}
               fetchPriority={index === 0 ? "high" : "auto"}
             />
@@ -69,10 +79,13 @@ export default async function CollectionsPage({
       {pageInfo.hasNextPage ? (
         <div className="mt-12 text-center">
           <Link
-            href={`/collections?after=${encodeURIComponent(pageInfo.endCursor ?? "")}`}
+            href={localizePath(
+              locale,
+              `/collections?after=${encodeURIComponent(pageInfo.endCursor ?? "")}`,
+            )}
             className="rounded-button button-outline focus-visible:outline-accent inline-flex h-11 items-center justify-center px-5 text-sm font-medium no-underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
           >
-            Load more
+            {content.collections.loadMore}
           </Link>
         </div>
       ) : null}

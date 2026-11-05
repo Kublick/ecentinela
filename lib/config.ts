@@ -1,9 +1,9 @@
+import { DEFAULT_LOCALE, LOCALE_MARKETS } from "./i18n";
+
 type StorefrontConfigShape = {
   storeDomain: string;
   publicStorefrontToken: string;
 };
-
-type I18nShape = { country: "US"; language: "EN" };
 
 type ShopifyScriptsShopShape = {
   shopId: string;
@@ -30,10 +30,8 @@ export const customerAccountConfig = {
   customerAccountApiClientId: process.env.NEXT_PUBLIC_CUSTOMER_ACCOUNT_API_CLIENT_ID || "",
 } satisfies CustomerAccountConfigShape;
 
-export const defaultI18n = {
-  country: "US",
-  language: "EN",
-} satisfies I18nShape;
+/** Storefront API context for the default (Spanish) locale. See `lib/i18n.ts`. */
+export const defaultI18n = LOCALE_MARKETS[DEFAULT_LOCALE];
 
 export const shop = {
   shopId: customerAccountConfig.shopId,

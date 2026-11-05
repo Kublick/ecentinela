@@ -26,8 +26,9 @@ const eslintConfig = defineConfig([
   },
   {
     files: [
-      "app/collections/**/page.tsx",
-      "app/search/page.tsx",
+      // `*` is the `[lang]` segment (brackets would be a glob character class).
+      "app/*/collections/**/page.tsx",
+      "app/*/search/page.tsx",
       "components/CartLineItem.tsx",
       "components/CollectionBrowser.tsx",
       "components/ProductCard.tsx",

@@ -4,7 +4,8 @@ import { cacheLife, cacheTag } from "next/cache";
 
 import { shop as shopConfig } from "@/lib/config";
 import { SHOP_ANALYTICS_QUERY } from "@/lib/queries";
-import { staticStorefrontClient } from "@/lib/storefront-static";
+import { DEFAULT_LOCALE } from "@/lib/i18n";
+import { getStaticStorefrontClient } from "@/lib/storefront-static";
 
 /**
  * Resolve the shop analytics GID and active currency, best-effort and bounded by
@@ -41,7 +42,7 @@ async function fetchShopAnalytics(): Promise<ShopIdentity> {
   cacheLife("hours");
   cacheTag("shop");
 
-  const { data, errors } = await staticStorefrontClient.graphql(SHOP_ANALYTICS_QUERY);
+  const { data, errors } = await getStaticStorefrontClient(DEFAULT_LOCALE).graphql(SHOP_ANALYTICS_QUERY);
   if (errors) {
     console.error("[hydrogen] Root shop query failed", errors);
   }

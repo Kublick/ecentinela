@@ -7,7 +7,7 @@ import {
 } from "@shopify/hydrogen";
 import { useCallback, useEffect, useRef, type CSSProperties, type ChangeEvent } from "react";
 
-import { content } from "./content";
+import { useI18n } from "@/components/I18nProvider";
 
 type FilterSwatch = {
   color?: string | null;
@@ -142,6 +142,7 @@ export function PriceRangeFilter({
   isLoading?: boolean;
   currencyCode?: string;
 }) {
+  const { content } = useI18n();
   const { min, max } = activePriceRange(activeFilters);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const minInput = useRef<HTMLInputElement>(null);

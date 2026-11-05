@@ -2,7 +2,8 @@
 
 import { useEffect } from "react";
 
-import { content } from "@/lib/content";
+import { useI18n } from "@/components/I18nProvider";
+import { interpolate } from "@/lib/content";
 
 /**
  * Global error boundary. Next.js renders this when a route
@@ -18,6 +19,7 @@ export default function Error({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
+  const { content } = useI18n();
   useEffect(() => {
     console.error("[hydrogen-example-nextjs] Route error:", error);
   }, [error]);
@@ -25,14 +27,16 @@ export default function Error({
   const message =
     typeof error?.message === "string" && error.message
       ? error.message
-      : "Something went wrong. Please try again.";
+      : content.general.genericError;
 
   return (
     <div className="max-w-page px-margin mx-auto py-16">
-      <h1 className="type-heading-xl mb-4">Something went wrong</h1>
+      <h1 className="type-heading-xl mb-4">{content.general.errorTitle}</h1>
       <p className="type-body text-on-surface-secondary mb-2">{message}</p>
       {error.digest ? (
-        <p className="text-on-surface-secondary mb-8 text-sm">Error digest: {error.digest}</p>
+        <p className="text-on-surface-secondary mb-8 text-sm">
+          {interpolate(content.general.errorDigest, { digest: error.digest })}
+        </p>
       ) : null}
       <button
         type="button"

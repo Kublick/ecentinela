@@ -13,12 +13,14 @@ import { useRef } from "react";
 import { ProductViewedTracker } from "@/components/ProductViewedTracker";
 import { QuantityStepper } from "@/components/QuantityStepper";
 import { openCartDrawer } from "@/lib/cart-drawer";
-import { content } from "@/lib/content";
 import { shopifyImageUrl, srcSetFor } from "@/lib/image";
+import { interpolate } from "@/lib/content";
 import { formatPrice } from "@/lib/money";
 import { ProductProvider, useProductForm } from "@/lib/product";
 import { galleryImages } from "@/lib/product-gallery";
 import type { ProductData } from "@/lib/product-query";
+
+import { useI18n } from "./I18nProvider";
 
 // Next.js keys the `[handle]` segment by its value, so a combined-listing switch
 // unmounts this whole component and the focused link with it. Module state
@@ -56,6 +58,7 @@ function focusIfPending(
 export function ProductDetails({ product }: { product: ProductData }) {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { href } = useI18n();
 
   return (
     <ProductProvider
@@ -63,7 +66,7 @@ export function ProductDetails({ product }: { product: ProductData }) {
       onSelect={(result) => {
         const targetHandle = result.selectedVariant?.product?.handle ?? product.handle;
         const next = variantUrl(product, result.selectedOptions, targetHandle, searchParams);
-        router.replace(next, { scroll: false });
+        router.replace(href(next), { scroll: false });
       }}
     >
       <ProductViewedTracker product={product} />
@@ -75,6 +78,7 @@ export function ProductDetails({ product }: { product: ProductData }) {
 function ProductPage({ product }: { product: ProductData }) {
   const { options, selectedVariant, formProps, register, errors } = useProductForm();
   const searchParams = useSearchParams();
+  const { content, href, tag } = useI18n();
   const addable = canAddToCart(product, options);
   const addToCartProps = register("addToCart", {});
   const firstOptionRef = useRef<HTMLFieldSetElement>(null);
@@ -116,10 +120,10 @@ function ProductPage({ product }: { product: ProductData }) {
 
           <div className="inline-flex flex-wrap items-baseline gap-2 text-lg">
             <span className={onSale ? "text-sale font-medium" : "text-on-surface font-medium"}>
-              {formatPrice(price)}
+              {formatPrice(price, tag)}
             </span>
             {onSale && compareAt ? (
-              <s className="text-compare text-base">{formatPrice(compareAt)}</s>
+              <s className="text-compare text-base">{formatPrice(compareAt, tag)}</s>
             ) : null}
           </div>
 
@@ -151,11 +155,8 @@ function ProductPage({ product }: { product: ProductData }) {
                         // a Cmd-click that opens a new tab records nothing.
                         <Link
                           key={value.name}
-                          href={variantUrl(
-                            product,
-                            value.selectedOptions,
-                            value.handle,
-                            searchParams,
+                          href={href(
+                            variantUrl(product, value.selectedOptions, value.handle, searchParams),
                           )}
                           scroll={false}
                           onNavigate={() => {
@@ -183,11 +184,8 @@ function ProductPage({ product }: { product: ProductData }) {
                         // marks the selected link (`aria-pressed` is invalid on a link).
                         <Link
                           key={value.name}
-                          href={variantUrl(
-                            product,
-                            value.selectedOptions,
-                            value.handle,
-                            searchParams,
+                          href={href(
+                            variantUrl(product, value.selectedOptions, value.handle, searchParams),
                           )}
                           scroll={false}
                           ref={(node) =>
@@ -242,6 +240,12 @@ function ProductPage({ product }: { product: ProductData }) {
               <QuantityStepper
                 inputProps={register("quantity", { defaultValue: 1 })}
                 label={content.product.quantity}
+                decreaseLabel={interpolate(content.product.decrease, {
+                  label: content.product.quantity,
+                })}
+                increaseLabel={interpolate(content.product.increase, {
+                  label: content.product.quantity,
+                })}
               />
             </div>
             <button
@@ -279,7 +283,7 @@ function ProductPage({ product }: { product: ProductData }) {
                   <li key={index} role="status">
                     {typeof error.message === "string"
                       ? error.message
-                      : "Something went wrong. Please try again."}
+                      : content.general.genericError}
                   </li>
                 ))}
               </ul>

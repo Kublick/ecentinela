@@ -3,12 +3,14 @@
 import { useEffect, useRef, useState } from "react";
 
 import { useCart, useCartForm, useSuspenseCart } from "@/lib/cart";
-import { content } from "@/lib/content";
+import { interpolate } from "@/lib/content";
 import { formatPrice } from "@/lib/money";
 
 import { CartLineItem } from "./CartLineItem";
+import { useI18n } from "./I18nProvider";
 
 export function CartContent() {
+  const { content, tag } = useI18n();
   const lineRefs = useRef(new Map<string, HTMLLIElement>());
   const discountRemoveRefs = useRef(new Map<string, HTMLButtonElement>());
   const pendingRemovalLineId = useRef<string | null>(null);
@@ -98,8 +100,8 @@ export function CartContent() {
                   type="text"
                   {...register("discountCode", { defaultValue: "" })}
                   ref={discountInputRef}
-                  placeholder="Discount code"
-                  aria-label="Discount code"
+                  placeholder={content.cart.discountCode}
+                  aria-label={content.cart.discountCode}
                   className="number-reset rounded-button border-border h-11 flex-1 border px-3 text-sm"
                   autoComplete="off"
                   autoCorrect="off"
@@ -111,7 +113,7 @@ export function CartContent() {
                   {...register("discount-apply")}
                   className="rounded-button button-secondary inline-flex h-11 items-center justify-center px-4 text-sm font-medium"
                 >
-                  Apply
+                  {content.cart.applyDiscount}
                 </button>
               </form>
 
@@ -140,7 +142,7 @@ export function CartContent() {
                         pendingRemovalDiscountCode.current = code.code;
                       }}
                       className="button-icon rounded text-sm"
-                      aria-label={`Remove discount ${code.code}`}
+                      aria-label={interpolate(content.cart.removeDiscount, { code: code.code })}
                     >
                       <img
                         src="/icons/icon-x.svg"
@@ -158,12 +160,12 @@ export function CartContent() {
               <div className="flex items-center justify-between" aria-busy={isPending}>
                 <span className="text-on-surface text-sm font-medium">
                   {content.cart.totalLabel}
-                  {isPending ? <span aria-hidden="true"> (updating)</span> : null}
+                  {isPending ? <span aria-hidden="true"> {content.cart.updating}</span> : null}
                 </span>
                 <span
                   className={`text-on-surface text-base font-medium ${isPending ? "text-on-surface-secondary" : ""}`}
                 >
-                  {formatPrice(subtotal)}
+                  {formatPrice(subtotal, tag)}
                 </span>
               </div>
               <p className="text-on-surface-secondary text-xs">
@@ -184,7 +186,8 @@ function CartStatus({
   isPending: boolean;
   networkErrors: readonly { message: string }[];
 }) {
-  const message = useCartStatusMessage(isPending, networkErrors.length > 0);
+  const { content } = useI18n();
+  const message = useCartStatusMessage(isPending, networkErrors.length > 0, content.cart);
   return (
     <>
       <span role="status" className="sr-only">
@@ -201,7 +204,11 @@ function CartStatus({
   );
 }
 
-function useCartStatusMessage(isPending: boolean, hasNetworkErrors: boolean): string {
+function useCartStatusMessage(
+  isPending: boolean,
+  hasNetworkErrors: boolean,
+  copy: { statusUpdating: string; statusUpdated: string },
+): string {
   const [previousPending, setPreviousPending] = useState(isPending);
   const [sawPending, setSawPending] = useState(isPending);
 
@@ -210,7 +217,7 @@ function useCartStatusMessage(isPending: boolean, hasNetworkErrors: boolean): st
     if (isPending) setSawPending(true);
   }
 
-  if (isPending) return "Updating cart totals";
-  if (sawPending && !hasNetworkErrors) return "Cart totals updated";
+  if (isPending) return copy.statusUpdating;
+  if (sawPending && !hasNetworkErrors) return copy.statusUpdated;
   return "";
 }

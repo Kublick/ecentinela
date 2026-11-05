@@ -28,6 +28,7 @@ Server-only:
 - `PRIVATE_STOREFRONT_API_TOKEN`: private Storefront API token.
 - `SESSION_SECRET`: random secret, at least 32 characters. Generate one with `node -e "console.log(crypto.randomBytes(32).toString('base64url'))"`.
 - `SITE_ORIGIN`: public origin of the site, e.g. `https://shop.e-centinela.com`.
+- `STOREFRONT_INVENTORY_ACCESS`: `true` once the storefront token has the `unauthenticated_read_product_inventory` scope (Hydrogen channel → storefront → Storefront API permissions). Turns on the "N en existencia" stock counts in the collection table. Defaults to off, because requesting stock without the scope fails.
 
 Public (inlined into the browser bundle at build time):
 
@@ -64,11 +65,21 @@ Build arguments are stored in the image's build history, so keep the image on yo
 | `pnpm lint` | Run ESLint. |
 | `pnpm typecheck` | Run TypeScript and Hydrogen GraphQL checks. |
 
+## Languages
+
+Spanish (`es-MX`) is the default and has no URL prefix; English lives under `/en` (`/products/x` ⇄ `/en/products/x`), like the current e-centinela.com.
+
+- All pages live under `app/[lang]/`. `proxy.ts` rewrites unprefixed URLs to `/es/...` internally and redirects `/es/...` to the unprefixed URL.
+- UI text is in `lib/dictionaries/es.ts` (source of truth) and `lib/dictionaries/en.ts`, which TypeScript checks against the Spanish shape. Server components use `getContent(locale)`; client components use `useI18n()`.
+- Product and collection content comes from Shopify in the requested language (`@inContext(language:)`). The store must have **Spanish as its default language** and English published for this to differ per locale.
+- Every page sets `hreflang` alternates and the sitemap lists both languages.
+- Unmatched URLs return a real 404 from `app/global-not-found.tsx` (after checking Shopify URL redirects).
+
 ## Pages
 
 - `/`: home with hero, featured products, and featured collections.
 - `/collections`: all collections.
-- `/collections/:handle`: collection page with filters, sort, pagination, and active filter chips.
+- `/collections/:handle`: ordering table (part number, description, vendor, datasheet, price, quantity, availability) with one "add to cart" for all rows, plus filters, sort, previous/next pages, and active filter chips. Datasheets come from the `custom.datasheet` product metafield.
 - `/products/:handle`: product page with gallery, URL-synced variants, add to cart, Shop Pay, and related products.
 - `/search`: storefront search with filters, sort, pagination, and predictive search.
 - `/cart`: cart page with Shop Pay and no-JS fallback for the cart drawer.
@@ -78,7 +89,7 @@ Build arguments are stored in the image's build history, so keep the image on yo
 
 ## Where to Start
 
-- Pages live in `app/`.
+- Pages live in `app/[lang]/`.
 - Shared UI lives in `components/`.
 - Storefront, cart, Customer Account, analytics, and query helpers live in `lib/`.
 - Global styling lives in `app/globals.css`.

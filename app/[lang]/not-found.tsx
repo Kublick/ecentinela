@@ -1,10 +1,10 @@
 import { handleShopifyRedirects } from "@shopify/hydrogen";
 import { headers } from "next/headers";
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { connection } from "next/server";
 import { Suspense } from "react";
 
+import { NotFoundMessage } from "@/components/NotFoundMessage";
 import { routeTemplates } from "@/lib/route-templates";
 import { getStorefrontClient } from "@/lib/storefront";
 
@@ -30,16 +30,7 @@ export default function NotFound() {
       <Suspense fallback={null}>
         <RedirectChecker />
       </Suspense>
-      <h1 className="type-display mb-4">Page not found</h1>
-      <p className="type-body text-on-surface-secondary mb-8">
-        The page you’re looking for doesn’t exist.
-      </p>
-      <Link
-        href="/"
-        className="rounded-button button-primary inline-flex h-11 items-center justify-center px-5 text-sm font-medium no-underline"
-      >
-        Back to home
-      </Link>
+      <NotFoundMessage />
     </div>
   );
 }
