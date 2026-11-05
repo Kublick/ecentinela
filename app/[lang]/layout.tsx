@@ -12,7 +12,7 @@ import { getContent } from "@/lib/content";
 import { LOCALE_TAGS, LOCALES } from "@/lib/i18n";
 import { resolveLocale } from "@/lib/locale-params";
 import { getMarket } from "@/lib/markets";
-import { SITE_ORIGIN } from "@/lib/site";
+import { isIndexingAllowed, SITE_ORIGIN } from "@/lib/site";
 
 import { AppShell } from "./app-shell";
 
@@ -42,6 +42,8 @@ export async function generateMetadata({ params }: LayoutProps<"/[lang]">): Prom
       template: `%s — ${shopName}`,
     },
     description: content.home.hero.subtitle,
+    // Sandbox/preview deployments: `noindex` on every page (see `isIndexingAllowed`).
+    ...(isIndexingAllowed() ? {} : { robots: { index: false, follow: false } }),
     icons: {
       icon: { url: "/favicon.svg", type: "image/svg+xml" },
     },

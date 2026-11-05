@@ -13,10 +13,24 @@ import type { NextConfig } from "next";
  *
  * `experimental.globalNotFound` serves `app/global-not-found.tsx` with a real
  * 404 for unmatched URLs; the root layout lives under `app/[lang]`.
+ *
+ * Unless `ALLOW_INDEXING=true` (see `isIndexingAllowed` in `lib/site.ts`),
+ * every response carries `X-Robots-Tag: noindex, nofollow` so sandbox and
+ * preview deployments stay out of search results.
  */
 export default function nextConfig(): NextConfig {
+  const allowIndexing = process.env.ALLOW_INDEXING === "true";
   return {
     output: "standalone",
+    async headers() {
+      if (allowIndexing) return [];
+      return [
+        {
+          source: "/:path*",
+          headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow" }],
+        },
+      ];
+    },
     cacheComponents: true,
     experimental: {
       globalNotFound: true,

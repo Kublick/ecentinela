@@ -10,6 +10,18 @@ export const SITE_ORIGIN =
     : "http://localhost:3000";
 
 /**
+ * Whether search engines may index this deployment. Off unless
+ * `ALLOW_INDEXING=true`, so sandbox and preview deployments (which show the
+ * real store's catalog) never compete with the live site. Read at build time
+ * by `robots.txt` and the root layout metadata, so in Coolify it must be a
+ * build variable too. `next.config.ts` reads the same variable for the
+ * `X-Robots-Tag` header.
+ */
+export function isIndexingAllowed(): boolean {
+  return typeof process !== "undefined" && process.env.ALLOW_INDEXING === "true";
+}
+
+/**
  * Public origin for Customer Account OAuth redirects. Behind a reverse proxy
  * (Coolify/Traefik) `request.url` carries the container bind address
  * (`0.0.0.0:3000`), so production uses `SITE_ORIGIN`. Development keeps the

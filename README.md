@@ -29,6 +29,7 @@ Server-only:
 - `SESSION_SECRET`: random secret, at least 32 characters. Generate one with `node -e "console.log(crypto.randomBytes(32).toString('base64url'))"`.
 - `SITE_ORIGIN`: public origin of the site, e.g. `https://shop.e-centinela.com`.
 - `STOREFRONT_INVENTORY_ACCESS`: `true` once the storefront token has the `unauthenticated_read_product_inventory` scope (Hydrogen channel → storefront → Storefront API permissions). Turns on the "N en existencia" stock counts in the collection table. Defaults to off, because requesting stock without the scope fails.
+- `ALLOW_INDEXING`: `true` only on the live domain. Anything else sends `noindex` (meta tag and `X-Robots-Tag` header) and a `robots.txt` that disallows everything, so sandbox and preview deployments don't show up in search results next to e-centinela.com. Read at build time, so in Coolify it must be a build variable.
 
 Public (inlined into the browser bundle at build time):
 
@@ -45,7 +46,7 @@ Public (inlined into the browser bundle at build time):
 1. **New Resource → Public/Private Repository** → this repo, branch `main`.
 2. **Build pack:** Dockerfile. **Ports exposed:** `3000`.
 3. **Domains:** `https://shop.e-centinela.com` (any domain starting with `https://`). Coolify's proxy issues and renews a Let's Encrypt certificate.
-4. **Environment variables:** add every variable above and mark each one as a **build variable** as well as a runtime one. Next.js prerenders pages from the store and inlines `NEXT_PUBLIC_*` during `next build`; a build without them falls back to mock.shop data.
+4. **Environment variables:** add every variable above and mark each one as a **build variable** as well as a runtime one. Leave `ALLOW_INDEXING` unset (or `false`) on sandbox deployments; set it to `true` only for the live domain. Next.js prerenders pages from the store and inlines `NEXT_PUBLIC_*` during `next build`; a build without them falls back to mock.shop data.
 5. **DNS:** point the domain's A record at the Coolify server, then deploy.
 6. **Customer Accounts:** in Shopify admin → Hydrogen → your storefront → Customer Account API settings, add:
    - Callback URI: `https://shop.e-centinela.com/account/authorize`

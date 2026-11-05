@@ -1,12 +1,17 @@
 import type { MetadataRoute } from "next";
 
-import { SITE_ORIGIN } from "@/lib/site";
+import { isIndexingAllowed, SITE_ORIGIN } from "@/lib/site";
 
 /**
- * `/robots.txt`. Allows all crawlers, points to the
- * sitemap, and disallows the cart + API surfaces.
+ * `/robots.txt`. With `ALLOW_INDEXING=true`, allows all crawlers, points to
+ * the sitemap, and disallows the cart + API surfaces. Otherwise (sandbox and
+ * preview deployments) it disallows everything.
  */
 export default function robots(): MetadataRoute.Robots {
+  if (!isIndexingAllowed()) {
+    return { rules: { userAgent: "*", disallow: "/" } };
+  }
+
   return {
     rules: {
       userAgent: "*",
