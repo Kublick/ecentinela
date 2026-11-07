@@ -6,7 +6,6 @@ import { CartDrawer } from "@/components/CartDrawer";
 import { Footer } from "@/components/Footer";
 import { Header } from "@/components/Header";
 import { HeaderAccountLink, HeaderAccountLinkFallback } from "@/components/HeaderAccountLink";
-import { getAnalyticsShop } from "@/lib/analytics-shop";
 import { cartHandlers } from "@/lib/cart-handlers";
 import { getContent } from "@/lib/content";
 import type { Locale } from "@/lib/i18n";
@@ -16,8 +15,7 @@ import { Providers } from "./providers";
 
 /**
  * Async server shell that owns the per-request (dynamic) read: the cart seed.
- * It also reads the cached shop identity for the header and footer. With
- * `cacheComponents: true`, uncached/dynamic data accessed in a Server Component
+ * With `cacheComponents: true`, uncached/dynamic data accessed in a Server Component
  * must sit inside a `<Suspense>` boundary so the static HTML shell prerenders
  * and the per-buyer parts stream (`next/server` `connection()` +
  * `headers()`/`cookies()` are per-request).
@@ -40,7 +38,6 @@ export async function AppShell({
   const cartData = getStorefrontClient().then((storefrontClient) =>
     cartHandlers.get({ storefrontClient }).then((r) => r.data),
   );
-  const analyticsShop = await getAnalyticsShop();
 
   return (
     <Providers cartData={cartData}>
@@ -58,14 +55,13 @@ export async function AppShell({
             <HeaderAccountLink locale={locale} />
           </Suspense>
         }
-        shopName={analyticsShop.shopName}
       />
 
       <main className="flex-1" id="main-content" tabIndex={-1}>
         {children}
       </main>
 
-      <Footer locale={locale} shopName={analyticsShop.shopName} />
+      <Footer locale={locale} />
 
       <CartDrawer />
     </Providers>

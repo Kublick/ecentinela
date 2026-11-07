@@ -9,7 +9,9 @@ import { formatMoney, type MoneyV2 } from "@shopify/hydrogen";
  * `useI18n()`) so amounts format for the shopper's language.
  */
 export function formatPrice(money: MoneyV2, locale = "en-US"): string {
-  return formatMoney(money, { locale }).toString();
+  // Same layout as e-centinela.com: "$1,091.05 USD" (symbol, amount, code).
+  const { currencyNarrowSymbol, amount } = formatMoney(money, { locale });
+  return `${currencyNarrowSymbol}${amount} ${money.currencyCode}`;
 }
 
 /** Format a price range from min/max `MoneyV2` values. */

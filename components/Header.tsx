@@ -1,87 +1,167 @@
 import Link from "next/link";
 import { Suspense, type ReactNode } from "react";
 
-import { getContent } from "@/lib/content";
+import { categories, subcategories } from "@/lib/categories";
+import { getContent, interpolate } from "@/lib/content";
 import { localizePath, type Locale } from "@/lib/i18n";
 
 import { CartTrigger } from "./CartTrigger";
 import { LanguageSwitch, LanguageSwitchFallback } from "./LanguageSwitch";
 import { MobileNavDialog } from "./MobileNavDialog";
-import { PredictiveSearchTrigger } from "./PredictiveSearchTrigger";
 
 /**
- * Site header: server shell + small client islands. Server-rendered: logo
- * `<Link>`, desktop nav `<Link>`s, and a real `<Link href="/search">` search
- * trigger that is reachable without JS. Client islands: `CartTrigger`,
- * `PredictiveSearchTrigger`, `LanguageSwitch` and `MobileNavDialog`.
+ * Site header, styled after e-centinela.com: a navy band with the logo, a
+ * visible part-number search (a plain GET form to `/search`), account and cart,
+ * then a darker band with the "Categorías" menu, the phone number and the
+ * language switch.
  *
- * The cart trigger opens the `<dialog>` drawer via `showModal()`. The footer
- * `/cart` link is the full-page fallback when the drawer is unavailable.
+ * The categories menu is CSS only (`.mega` in `globals.css`): it opens on hover
+ * or keyboard focus, and the hovered or focused category shows its
+ * subcategories on the right.
  */
-export function Header({
-  locale,
-  accountLink,
-  shopName = "CORE",
-}: {
-  locale: Locale;
-  accountLink?: ReactNode;
-  shopName?: string;
-}) {
+export function Header({ locale, accountLink }: { locale: Locale; accountLink?: ReactNode }) {
   const content = getContent(locale);
+  const nav = categories.map((category) => ({
+    title: category.title,
+    href: localizePath(locale, `/collections/${category.handle}`),
+    subcategories: subcategories(category.handle).map((sub) => ({
+      label: sub.label,
+      href: localizePath(locale, sub.href),
+    })),
+  }));
+
   return (
-    <header className="border-border bg-surface sticky top-0 z-40 border-b">
-      <div
-        className="max-w-page px-margin mx-auto flex h-16 w-full items-center justify-between"
-        data-header-nav-group
-      >
-        <div className="flex items-center gap-2">
-          <MobileNavDialog />
-          <Link
-            href={localizePath(locale, "/")}
-            className="text-on-surface focus-visible:outline-accent inline-flex items-center rounded-sm text-lg font-medium no-underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
-          >
-            {shopName}
-          </Link>
-        </div>
-
-        <nav
-          aria-label={content.header.navigation}
-          className="mx-8 hidden min-w-0 flex-1 items-center gap-8 md:flex"
-        >
-          {content.header.navItems.map((item) => (
-            <Link
-              key={item.href}
-              href={localizePath(locale, item.href)}
-              className="text-on-surface focus-visible:outline-accent shrink-0 rounded-sm text-sm font-normal whitespace-nowrap no-underline hover:opacity-70 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 motion-safe:transition-opacity"
-            >
-              {item.label}
+    <header className="relative z-40 text-white md:sticky md:top-0">
+      <div className="bg-primary">
+        <div className="max-w-page px-margin mx-auto flex flex-wrap items-center gap-x-8 gap-y-3 py-3 md:py-4">
+          <div className="flex items-center gap-1">
+            <MobileNavDialog
+              categories={nav.map(({ title, href }) => ({ title, href }))}
+              allHref={localizePath(locale, "/collections")}
+            />
+            <Link href={localizePath(locale, "/")} className="inline-flex shrink-0">
+              <img
+                src="/brand/logo-centinela-white.svg"
+                alt="Eléctrica Centinela"
+                width={232}
+                height={42}
+                className="h-auto w-40 md:w-56"
+              />
             </Link>
-          ))}
-        </nav>
+          </div>
 
-        <div className="flex items-center gap-0">
-          <Suspense fallback={<LanguageSwitchFallback />}>
-            <LanguageSwitch />
-          </Suspense>
-          <PredictiveSearchTrigger />
-          <noscript>
-            <form
-              action={localizePath(locale, "/search")}
-              method="get"
-              role="search"
-              className="sr-only"
+          <form
+            action={localizePath(locale, "/search")}
+            method="get"
+            role="search"
+            className="order-last flex w-full min-w-0 md:order-none md:w-auto md:flex-1"
+          >
+            <label htmlFor="header-search-q" className="sr-only">
+              {content.general.search}
+            </label>
+            <input
+              id="header-search-q"
+              name="q"
+              type="search"
+              autoComplete="off"
+              placeholder={content.header.searchPlaceholder}
+              className="h-11 rounded-e-none border-0 text-base"
+            />
+            <button
+              type="submit"
+              aria-label={content.general.search}
+              className="bg-lime text-primary-dark inline-flex h-11 w-14 shrink-0 items-center justify-center rounded-e-[var(--radius-input)] hover:brightness-95"
             >
-              <label htmlFor="header-search-q">{content.general.search}</label>
-              <input id="header-search-q" name="q" type="search" autoComplete="off" />
-              <button type="submit">{content.search.submit}</button>
-            </form>
-          </noscript>
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.2"
+                strokeLinecap="round"
+                className="size-5"
+                aria-hidden="true"
+              >
+                <circle cx="11" cy="11" r="7" />
+                <path d="M20 20l-3.5-3.5" />
+              </svg>
+            </button>
+          </form>
 
-          {accountLink}
-
-          <CartTrigger />
+          <div className="ms-auto flex items-center gap-2 md:ms-0">
+            {accountLink}
+            <CartTrigger />
+          </div>
         </div>
       </div>
+
+      <nav aria-label={content.header.navigation} className="bg-primary-dark hidden md:block">
+        <div className="max-w-page px-margin relative mx-auto flex items-center gap-6">
+          <div className="mega">
+            <Link
+              href={localizePath(locale, "/collections")}
+              className="bg-secondary inline-flex h-12 items-center gap-2 px-4 font-semibold text-white no-underline"
+            >
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                className="size-4"
+                aria-hidden="true"
+              >
+                <path d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+              {content.header.categories}
+            </Link>
+            <div className="mega-panel">
+              <ul role="list" className="mega-list">
+                {nav.map((category) => (
+                  <li key={category.href} className="mega-item">
+                    <Link href={category.href}>{category.title}</Link>
+                    <div className="mega-subs">
+                      <p className="mb-4 flex items-baseline justify-between gap-4">
+                        <span className="text-primary-dark text-lg font-bold">{category.title}</span>
+                        <Link href={category.href} className="text-link text-sm font-semibold">
+                          {interpolate(content.header.viewCategory, { title: category.title })} →
+                        </Link>
+                      </p>
+                      <ul role="list" className="columns-3 gap-6 text-sm">
+                        {category.subcategories.map((sub) => (
+                          <li key={sub.href} className="break-inside-avoid">
+                            <Link
+                              href={sub.href}
+                              className="text-on-surface block py-1 no-underline hover:underline"
+                            >
+                              {sub.label}
+                            </Link>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+
+          <Link
+            href={localizePath(locale, "/collections")}
+            className="text-white no-underline hover:underline"
+          >
+            {content.header.allCategories}
+          </Link>
+
+          <div className="ms-auto flex items-center gap-4 [&_a]:text-white">
+            <a href={content.header.phoneHref} className="no-underline hover:underline">
+              {content.header.phone}
+            </a>
+            <Suspense fallback={<LanguageSwitchFallback />}>
+              <LanguageSwitch />
+            </Suspense>
+          </div>
+        </div>
+      </nav>
     </header>
   );
 }
