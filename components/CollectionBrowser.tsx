@@ -387,7 +387,7 @@ function SearchPage(props: SearchPageProps) {
         {term ? (
           <Link
             href={href("/search")}
-            className="text-on-surface-secondary hover:text-on-surface text-sm no-underline"
+            className="text-on-surface-secondary hover:text-on-surface inline-flex min-h-11 items-center text-sm no-underline"
           >
             {content.search.clear}
           </Link>

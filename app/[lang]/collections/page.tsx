@@ -52,7 +52,7 @@ export default async function CollectionsPage({ params }: PageProps<"/[lang]/col
             <li key={collection.id} className="break-inside-avoid">
               <a
                 href={`#${collection.handle}`}
-                className="text-primary-dark block py-1 font-semibold no-underline hover:underline"
+                className="text-primary-dark flex min-h-11 items-center font-semibold no-underline hover:underline md:min-h-7"
               >
                 {collection.title}
               </a>
@@ -89,11 +89,14 @@ export default async function CollectionsPage({ params }: PageProps<"/[lang]/col
                   id={`${collection.handle}-heading`}
                   className="text-primary-dark text-xl font-bold"
                 >
-                  <Link href={href} className="no-underline hover:underline">
+                  <Link href={href} className="inline-flex min-h-11 items-center no-underline hover:underline md:min-h-0">
                     {collection.title}
                   </Link>
                 </h2>
-                <Link href={href} className="text-link ms-auto text-sm font-semibold">
+                <Link
+                  href={href}
+                  className="text-link ms-auto inline-flex min-h-11 items-center text-sm font-semibold md:min-h-6"
+                >
                   {interpolate(content.header.viewCategory, { title: collection.title })} →
                 </Link>
               </div>
@@ -106,7 +109,7 @@ export default async function CollectionsPage({ params }: PageProps<"/[lang]/col
                     <li key={sub.href} className="break-inside-avoid">
                       <Link
                         href={localizePath(locale, sub.href)}
-                        className="text-on-surface block py-1 no-underline hover:underline"
+                        className="text-on-surface flex min-h-11 items-center no-underline hover:underline md:min-h-7"
                       >
                         {sub.label}
                       </Link>
