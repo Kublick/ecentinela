@@ -160,7 +160,7 @@ function LoginPanel({ content, loginFailed }: { content: Content; loginFailed: b
           tabIndex={-1}
           role="alert"
           autoFocus
-          className="border-border bg-surface-secondary text-on-surface focus-visible:outline-accent mb-6 rounded border p-4 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+          className="border-border bg-surface-secondary text-on-surface focus-visible:outline-focus mb-6 rounded border p-4 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
         >
           {content.account.loginFailed}
         </p>
@@ -170,7 +170,7 @@ function LoginPanel({ content, loginFailed }: { content: Content; loginFailed: b
       {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
       <a
         href="/account/login"
-        className="rounded-button button-primary focus-visible:outline-accent inline-flex h-11 items-center justify-center px-5 text-sm font-medium no-underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+        className="rounded-button button-primary focus-visible:outline-focus inline-flex h-11 items-center justify-center px-5 text-sm font-medium no-underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
       >
         {content.account.logIn}
       </a>
@@ -218,7 +218,7 @@ function CustomerCard({
       <form method="post" action="/account/logout" className="mt-8">
         <button
           type="submit"
-          className="rounded-button button-outline focus-visible:outline-accent inline-flex h-11 items-center justify-center px-5 text-sm font-medium focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+          className="rounded-button button-outline focus-visible:outline-focus inline-flex h-11 items-center justify-center px-5 text-sm font-medium focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
         >
           {content.account.logOut}
         </button>

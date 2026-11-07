@@ -41,7 +41,7 @@ export default function Error({
       <button
         type="button"
         onClick={reset}
-        className="rounded-button button-primary focus-visible:outline-accent inline-flex h-11 items-center justify-center px-5 text-sm font-medium focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+        className="rounded-button button-primary focus-visible:outline-focus inline-flex h-11 items-center justify-center px-5 text-sm font-medium focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
       >
         {content.general.tryAgain}
       </button>

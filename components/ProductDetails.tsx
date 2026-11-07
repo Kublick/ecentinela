@@ -5,7 +5,6 @@ import {
   canAddToCart,
   type SelectedOption,
 } from "@shopify/hydrogen";
-import { ShopPayButton } from "@shopify/hydrogen/react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useRef } from "react";
@@ -16,12 +15,13 @@ import { QuantityStepper } from "@/components/QuantityStepper";
 import { openCartDrawer } from "@/lib/cart-drawer";
 import { shopifyImageUrl, srcSetFor } from "@/lib/image";
 import { interpolate } from "@/lib/content";
-import { formatPrice } from "@/lib/money";
+import { isPriceOnRequest } from "@/lib/money";
 import { ProductProvider, useProductForm } from "@/lib/product";
 import { galleryImages } from "@/lib/product-gallery";
 import type { ProductData } from "@/lib/product-query";
 
 import { useI18n } from "./I18nProvider";
+import { ConvertedPriceNote, Price } from "./CurrencyProvider";
 
 // Next.js keys the `[handle]` segment by its value, so a combined-listing switch
 // unmounts this whole component and the focused link with it. Module state
@@ -79,7 +79,7 @@ export function ProductDetails({ product }: { product: ProductData }) {
 function ProductPage({ product }: { product: ProductData }) {
   const { options, selectedVariant, formProps, register, errors } = useProductForm();
   const searchParams = useSearchParams();
-  const { content, href, tag } = useI18n();
+  const { content, href } = useI18n();
   const addable = canAddToCart(product, options);
   const addToCartProps = register("addToCart", {});
   const firstOptionRef = useRef<HTMLFieldSetElement>(null);
@@ -92,7 +92,10 @@ function ProductPage({ product }: { product: ProductData }) {
   const onSale = compareAt && Number(compareAt.amount) > Number(price.amount);
 
   const images = galleryImages(product, selectedVariant?.image ?? null);
-  const partNumber = selectedVariant?.sku || product.handle;
+  const partNumber = (selectedVariant?.sku || product.handle).toUpperCase();
+  const soldOut = Boolean(selectedVariant && !selectedVariant.availableForSale);
+  // Sold out or a placeholder price: offer a call instead of add-to-cart.
+  const callOnly = soldOut || isPriceOnRequest(price);
   const datasheetUrl = datasheetHref(product.datasheet);
 
   return (
@@ -109,6 +112,8 @@ function ProductPage({ product }: { product: ProductData }) {
                 src={shopifyImageUrl(image.url, { width: index === 0 ? 800 : 400 })}
                 srcSet={srcSetFor(image.url, { width: index === 0 ? 800 : 400 })}
                 alt={image.altText ?? product.title}
+                width={index === 0 ? 800 : 400}
+                height={index === 0 ? 800 : 400}
                 className="h-full w-full object-contain"
                 loading={index === 0 ? "eager" : "lazy"}
                 {...(index === 0 ? { fetchPriority: "high" } : {})}
@@ -119,7 +124,7 @@ function ProductPage({ product }: { product: ProductData }) {
 
         {/* Info column */}
         <div className="flex flex-col gap-4 md:sticky md:top-8 md:self-start">
-          <h1 className="text-primary-dark font-mono text-3xl font-semibold break-all uppercase md:text-4xl">
+          <h1 className="text-primary-dark font-mono text-3xl font-semibold break-all md:text-4xl">
             {partNumber}
           </h1>
           <p className="text-xl leading-snug">{product.title}</p>
@@ -132,25 +137,30 @@ function ProductPage({ product }: { product: ProductData }) {
           <div className="border-border flex flex-col gap-1 border-y py-4">
             <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
               <span className="text-price text-3xl font-bold tabular-nums">
-                {formatPrice(price, tag)}
+                <Price money={price} />
               </span>
               {onSale && compareAt ? (
-                <s className="text-compare text-base">{formatPrice(compareAt, tag)}</s>
+                <s className="text-compare text-base"><Price money={compareAt} /></s>
               ) : null}
-              <span className="text-on-surface-secondary">{content.product.taxIncluded}</span>
+              {isPriceOnRequest(price) ? null : (
+                <span className="text-on-surface-secondary">{content.product.taxIncluded}</span>
+              )}
             </div>
+            <ConvertedPriceNote className="text-on-surface-secondary text-sm" />
             <p className="text-on-surface-secondary text-sm">{content.product.invoice}</p>
             {selectedVariant ? (
               <span
                 className={`mt-2 inline-flex self-start rounded-full px-3 py-1 text-sm font-semibold ${
-                  selectedVariant.availableForSale
-                    ? "bg-[#e3f2e6] text-[#1b5e2a]"
-                    : "text-on-surface-secondary bg-[#f1f2f5]"
+                  !callOnly
+                    ? "bg-stock text-on-stock"
+                    : "text-on-surface-secondary bg-muted"
                 }`}
               >
-                {selectedVariant.availableForSale
-                  ? content.product.inventory.inStock
-                  : content.product.soldOut}
+                {soldOut
+                  ? content.product.soldOut
+                  : callOnly
+                    ? content.collection.table.onRequest
+                    : content.product.inventory.inStock}
               </span>
             ) : null}
           </div>
@@ -252,10 +262,30 @@ function ProductPage({ product }: { product: ProductData }) {
             </div>
           ) : null}
 
+          {callOnly ? (
+            // Out of stock online or price on request: the store can still source
+            // or quote it, so offer a call instead of a dead add-to-cart button.
+            <div className="flex flex-col gap-2">
+              <a
+                href={content.header.phoneHref}
+                className="rounded-button bg-primary hover:bg-primary-dark inline-flex h-12 items-center justify-center gap-2 px-4 text-base font-bold text-white no-underline"
+              >
+                {interpolate(content.product.callToOrder, { phone: content.header.phone })}
+              </a>
+              <p className="text-on-surface-secondary text-sm">
+                {soldOut ? content.product.soldOutNote : content.product.quoteNote}
+              </p>
+            </div>
+          ) : null}
+
           {/* Add to cart form — separate from variant selection (variant-form skill).
               `formProps({ afterSubmit: openCartDrawer })` opens the drawer once
               on a successful reply; do not double-wire it on the button. */}
-          <form {...formProps({ afterSubmit: openCartDrawer })} className="flex flex-col gap-3">
+          <form
+            {...formProps({ afterSubmit: openCartDrawer })}
+            hidden={callOnly}
+            className="flex flex-col gap-3"
+          >
             <input type="hidden" {...register("merchandiseId", {})} />
             <div className="flex items-center gap-3">
               <span className="type-body-sm text-on-surface font-medium">
@@ -281,7 +311,7 @@ function ProductPage({ product }: { product: ProductData }) {
                   firstOptionRef.current?.focus();
                 }
               }}
-              className="rounded-button bg-lime text-primary-dark focus-visible:outline-accent inline-flex h-12 items-center justify-center px-4 text-base font-bold hover:brightness-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 aria-disabled:opacity-50"
+              className="rounded-button bg-lime text-primary-dark focus-visible:outline-focus inline-flex h-12 items-center justify-center px-4 text-base font-bold hover:brightness-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 aria-disabled:opacity-50"
             >
               {addable
                 ? content.product.addToCart
@@ -290,15 +320,6 @@ function ProductPage({ product }: { product: ProductData }) {
                   : content.product.selectOptions}
             </button>
           </form>
-
-          {selectedVariant ? (
-            <ShopPayButton
-              variants={[{ id: selectedVariant.id, quantity: 1 }]}
-              disabled={!addable}
-              width="100%"
-              borderRadius="0.5rem"
-            />
-          ) : null}
 
           {datasheetUrl ? (
             <a

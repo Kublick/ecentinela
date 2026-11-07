@@ -57,7 +57,7 @@ function CartDrawerInner() {
         <button
           type="button"
           onClick={closeCartDrawer}
-          className="button-icon focus-visible:outline-accent inline-flex h-11 w-11 items-center justify-center rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+          className="button-icon focus-visible:outline-focus inline-flex h-11 w-11 items-center justify-center rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
           aria-label={content.general.close}
         >
           <img
@@ -80,7 +80,7 @@ function CartDrawerInner() {
           <ShopPayButton width="100%" borderRadius="8px" />
           <a
             href={checkoutUrl}
-            className="rounded-button button-primary focus-visible:outline-accent inline-flex h-11 w-full items-center justify-center gap-2 px-4 text-sm font-medium no-underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+            className="rounded-button button-primary focus-visible:outline-focus inline-flex h-11 w-full items-center justify-center gap-2 px-4 text-sm font-medium no-underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
           >
             {content.cart.checkout}
           </a>

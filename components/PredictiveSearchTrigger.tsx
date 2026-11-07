@@ -25,7 +25,7 @@ export function PredictiveSearchTrigger() {
     return (
       <Link
         href={href("/search")}
-        className="button-icon focus-visible:outline-accent inline-flex h-11 w-11 items-center justify-center rounded no-underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+        className="button-icon focus-visible:outline-focus inline-flex h-11 w-11 items-center justify-center rounded no-underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
         aria-label={content.general.search}
         data-testid="search-modal-trigger"
       >
@@ -46,7 +46,7 @@ export function PredictiveSearchTrigger() {
       <button
         type="button"
         onClick={() => setSearchOpen(true)}
-        className="button-icon focus-visible:outline-accent inline-flex h-11 w-11 items-center justify-center rounded no-underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+        className="button-icon focus-visible:outline-focus inline-flex h-11 w-11 items-center justify-center rounded no-underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
         aria-label={content.general.search}
         aria-haspopup="dialog"
         aria-expanded={searchOpen}

@@ -16,10 +16,10 @@ import { useEffect, useRef } from "react";
 
 import { shopifyImageUrl } from "@/lib/image";
 import { interpolate } from "@/lib/content";
-import { formatPrice } from "@/lib/money";
 import { routeTemplates } from "@/lib/route-templates";
 
 import { useI18n } from "./I18nProvider";
+import { Price } from "./CurrencyProvider";
 
 const PREDICTIVE_SEARCH_LIMIT = 5;
 const PREDICTIVE_SEARCH_DIALOG_ID = "search-modal";
@@ -156,7 +156,7 @@ function PredictiveBody({
   state: PredictiveSearchState<PredictiveSearchData>;
   onNavigate: () => void;
 }) {
-  const { content, href: localize, tag } = useI18n();
+  const { content, href: localize } = useI18n();
   const { status, error, result } = state;
   const products = result.items.products;
   const hasResults = products.length > 0;
@@ -207,7 +207,7 @@ function PredictiveBody({
               <span className="flex flex-col">
                 <span className="type-body-sm text-on-surface font-medium">{product.title}</span>
                 {price ? (
-                  <span className="text-on-surface-secondary text-sm">{formatPrice(price, tag)}</span>
+                  <span className="text-on-surface-secondary text-sm"><Price money={price} /></span>
                 ) : null}
               </span>
             </Link>

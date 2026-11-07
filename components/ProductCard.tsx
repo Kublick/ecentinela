@@ -1,11 +1,11 @@
 import type { StorefrontApi } from "@shopify/hydrogen";
 import Link from "next/link";
 
-import { getContent, interpolate } from "@/lib/content";
+import { getContent } from "@/lib/content";
 import type { PRODUCT_CARD_QUERY } from "@/lib/fragments";
-import { LOCALE_TAGS, localizePath, type Locale } from "@/lib/i18n";
+import { localizePath, type Locale } from "@/lib/i18n";
 import { shopifyImageUrl, srcSetFor } from "@/lib/image";
-import { formatPrice } from "@/lib/money";
+import { Price } from "./CurrencyProvider";
 
 /** The typed product card node consumed by grids across the storefront. */
 export type ProductCardData = NonNullable<
@@ -39,7 +39,6 @@ export function ProductCard({
   fetchPriority = "auto",
 }: ProductCardProps) {
   const content = getContent(locale);
-  const tag = LOCALE_TAGS[locale];
   const primaryImage = product.featuredImage;
   const secondaryImage = product.images.nodes[1] ?? null;
   const minPrice = product.priceRange.minVariantPrice;
@@ -56,7 +55,7 @@ export function ProductCard({
               src={shopifyImageUrl(primaryImage.url, { width: 600 })}
               srcSet={srcSetFor(primaryImage.url, { width: 600 })}
               alt={primaryImage.altText ?? product.title}
-              className="h-full w-full object-cover"
+              className="h-full w-full bg-white object-contain p-2"
               loading={loading}
               {...(fetchPriority !== "auto" ? { fetchPriority: fetchPriority } : {})}
             />
@@ -69,11 +68,8 @@ export function ProductCard({
             <img
               src={shopifyImageUrl(secondaryImage.url, { width: 600 })}
               srcSet={srcSetFor(secondaryImage.url, { width: 600 })}
-              alt={
-                secondaryImage.altText ??
-                interpolate(content.product.alternateImage, { title: product.title })
-              }
-              className="h-full w-full object-cover"
+              alt=""
+              className="h-full w-full bg-white object-contain p-2"
               loading="lazy"
             />
           </div>
@@ -103,12 +99,12 @@ export function ProductCard({
             <span className="sr-only">
               {onSale ? content.product.salePrice : content.product.price}
             </span>
-            {formatPrice(minPrice, tag)}
+            <Price money={minPrice} />
           </span>
           {onSale && compareAt ? (
             <s className="text-compare text-sm">
               <span className="sr-only">{content.product.regularPrice}</span>
-              {formatPrice(compareAt, tag)}
+              <Price money={compareAt} />
             </s>
           ) : null}
         </div>

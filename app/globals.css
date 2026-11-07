@@ -26,6 +26,13 @@
   --color-lime: #84c347;
   --color-price: #cc0000;
   --color-tint: #eef0f7;
+  --color-panel: #f5f6f8;
+  --color-panel-subtle: #f9fafb;
+  --color-chip: #c9cde6;
+  --color-stock: #e3f2e6;
+  --color-on-stock: #1b5e2a;
+  --color-muted: #f1f2f5;
+  --color-error-on-dark: #ffc9c9;
 
   /* Interactive — derived from --color-primary. */
   --color-interactive: var(--color-primary);
@@ -42,6 +49,10 @@
 
   /* Accent — a lighter, desaturated tint of the brand. */
   --color-accent: oklch(from var(--color-primary) calc(l + 0.17) calc(c * 0.39) calc(h - 9));
+
+  /* Keyboard focus ring. Primary on light surfaces (9:1 on white); the dark
+     header bands switch it to white below so the ring stays visible. */
+  --color-focus: var(--color-interactive);
 
   /* Button variants */
   --color-button-primary: var(--color-interactive);
@@ -121,6 +132,7 @@
   --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
   --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
   --shadow-xl: 0 25px 50px -12px rgb(0 0 0 / 0.25);
+  --shadow-bar: 0 -6px 18px rgb(20 22 60 / 0.18);
 
   /* Aspect ratios */
   --aspect-portrait: 4/5;
@@ -183,14 +195,15 @@
 
   input:focus-visible,
   textarea:focus-visible,
-  select:focus-visible {
-    outline: 2px solid var(--color-interactive);
+  select:focus-visible,
+  button:focus-visible {
+    outline: 2px solid var(--color-focus);
     outline-offset: 2px;
   }
 
   /* Visible keyboard focus for plain links (additive over inline utilities). */
   a:focus-visible {
-    outline: 2px solid var(--color-accent);
+    outline: 2px solid var(--color-focus);
     outline-offset: 2px;
     border-radius: var(--radius-sm);
   }
@@ -338,7 +351,7 @@
   input:focus-visible + .filter-swatch,
   label:has(input:focus-visible) .filter-checkbox,
   label:has(input:focus-visible) .filter-swatch {
-    outline: 2px solid var(--color-accent);
+    outline: 2px solid var(--color-focus);
     outline-offset: 2px;
   }
   .filter-checkbox[aria-disabled="true"],
@@ -404,7 +417,7 @@
     cursor: not-allowed;
   }
   .option-pill:focus-visible {
-    outline: 2px solid var(--color-accent);
+    outline: 2px solid var(--color-focus);
     outline-offset: 2px;
   }
   /* Pressed feedback — matches the branded-button press ramp: an unselected
@@ -568,7 +581,7 @@
     .button-surface,
     .button-shop-pay
   ):focus-visible {
-    outline: 2px solid var(--color-accent);
+    outline: 2px solid var(--color-focus);
     outline-offset: 2px;
   }
 
@@ -577,7 +590,7 @@
     background: transparent;
   }
   .quantity-selector-outlined:focus-within {
-    outline: 2px solid var(--color-accent);
+    outline: 2px solid var(--color-focus);
     outline-offset: 2px;
   }
   .quantity-selector-filled {
@@ -643,7 +656,7 @@
     inset: 0;
   }
   .card-link:focus-visible {
-    outline: 2px solid var(--color-accent);
+    outline: 2px solid var(--color-focus);
     outline-offset: 2px;
   }
 
@@ -733,71 +746,9 @@
     opacity: 1;
   }
   .nav-dropdown-item:focus-visible {
-    outline: 2px solid var(--color-accent);
+    outline: 2px solid var(--color-focus);
     outline-offset: 2px;
     border-radius: var(--radius-sm);
-  }
-
-  /* Header "Categorías" menu: opens on hover or keyboard focus. The hovered or
-     focused category shows its subcategories; with none, the first one does. */
-  .mega-panel {
-    position: absolute;
-    inset-inline: var(--spacing-margin);
-    top: 100%;
-    z-index: 50;
-    display: grid;
-    grid-template-columns: 18rem 1fr;
-    min-height: 24rem;
-    background: var(--color-surface);
-    color: var(--color-on-surface);
-    box-shadow: var(--shadow-lg);
-    border: 1px solid var(--color-border);
-    opacity: 0;
-    visibility: hidden;
-    transition:
-      opacity 0.15s var(--ease-ui),
-      visibility 0.15s;
-  }
-  @media (hover: hover) {
-    .mega:hover .mega-panel {
-      opacity: 1;
-      visibility: visible;
-    }
-  }
-  .mega:focus-within .mega-panel {
-    opacity: 1;
-    visibility: visible;
-  }
-  .mega-list {
-    background: #f5f6f8;
-    border-inline-end: 1px solid var(--color-border);
-    padding-block: 0.5rem;
-  }
-  .mega-item > a {
-    display: block;
-    padding: 0.375rem 1.25rem;
-    font-size: 0.875rem;
-    color: var(--color-on-surface);
-    text-decoration: none;
-  }
-  .mega-subs {
-    display: none;
-    position: absolute;
-    inset-block: 0;
-    inset-inline: 18rem 0;
-    padding: 1.5rem 2rem;
-    overflow-y: auto;
-  }
-  .mega-item:is(:hover, :focus-within) > a,
-  .mega-list:not(:has(.mega-item:is(:hover, :focus-within))) > .mega-item:first-child > a {
-    background: var(--color-surface);
-    color: var(--color-primary-dark);
-    font-weight: 600;
-    box-shadow: inset 3px 0 0 var(--color-secondary);
-  }
-  .mega-item:is(:hover, :focus-within) > .mega-subs,
-  .mega-list:not(:has(.mega-item:is(:hover, :focus-within))) > .mega-item:first-child > .mega-subs {
-    display: block;
   }
 
   .remove-icon-top,
@@ -1044,4 +995,15 @@ dialog#cart-drawer[open]::backdrop {
 /* Body scroll lock while the cart drawer is open (pure CSS, no JS toggling). */
 body:has(dialog#cart-drawer[open]) {
   overflow: hidden;
+}
+
+/* Focus rings on the navy and green bands; panels inside them (menus, dialogs)
+   are .bg-surface and switch back. */
+.bg-primary,
+.bg-primary-dark,
+.bg-secondary {
+  --color-focus: #ffffff;
+}
+.bg-surface {
+  --color-focus: var(--color-interactive);
 }

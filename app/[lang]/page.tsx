@@ -24,16 +24,16 @@ export async function generateMetadata({ params }: PageProps<"/[lang]">): Promis
   };
 }
 
-/** Brand strip: logos from e-centinela.com, each opening a search for the brand. */
+/** Brand strip: logos from e-centinela.com (intrinsic sizes, so nothing shifts while loading), each opening a search for the brand. */
 const BRANDS = [
-  { name: "Bussmann", src: "/brands/bussmann.png" },
-  { name: "Eaton", src: "/brands/eaton.png" },
-  { name: "ABB", src: "/brands/abb.png" },
-  { name: "Finder", src: "/brands/finder.png" },
-  { name: "Legrand", src: "/brands/legrand.jpg" },
-  { name: "Weidmuller", src: "/brands/weidmuller.png" },
-  { name: "Siemens", src: "/brands/siemens.png" },
-  { name: "Fluke", src: "/brands/fluke.png" },
+  { name: "Bussmann", src: "/brands/bussmann.png", width: 200, height: 108 },
+  { name: "Eaton", src: "/brands/eaton.png", width: 1000, height: 371 },
+  { name: "ABB", src: "/brands/abb.png", width: 1000, height: 403 },
+  { name: "Finder", src: "/brands/finder.png", width: 723, height: 187 },
+  { name: "Legrand", src: "/brands/legrand.jpg", width: 723, height: 188 },
+  { name: "Weidmuller", src: "/brands/weidmuller.png", width: 723, height: 96 },
+  { name: "Siemens", src: "/brands/siemens.png", width: 723, height: 114 },
+  { name: "Fluke", src: "/brands/fluke.png", width: 1557, height: 509 },
 ];
 
 /**
@@ -48,7 +48,7 @@ export default async function HomePage({ params }: PageProps<"/[lang]">) {
 
   return (
     <>
-      <section className="border-border border-b bg-[#f5f6f8]">
+      <section className="border-border border-b bg-panel">
         <div className="max-w-page px-margin mx-auto flex flex-col gap-4 py-10 md:py-12">
           <h1 className="text-primary-dark text-3xl font-bold tracking-tight md:text-4xl">
             {content.home.searchHeading}
@@ -134,9 +134,11 @@ export default async function HomePage({ params }: PageProps<"/[lang]">) {
               >
                 <img
                   src={brand.src}
+                  width={brand.width}
+                  height={brand.height}
                   alt=""
                   loading="lazy"
-                  className="max-h-11 max-w-full object-contain"
+                  className="h-auto max-h-11 w-auto max-w-full object-contain"
                 />
               </Link>
             </li>
@@ -144,7 +146,7 @@ export default async function HomePage({ params }: PageProps<"/[lang]">) {
         </ul>
       </section>
 
-      <section className="border-border border-y bg-[#f5f6f8]">
+      <section className="border-border border-y bg-panel">
         <ul
           role="list"
           className="max-w-page px-margin mx-auto grid grid-cols-1 gap-6 py-7 sm:grid-cols-2 lg:grid-cols-4"

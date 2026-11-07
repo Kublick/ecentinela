@@ -9,6 +9,7 @@ import { localeAlternates, localizePath, type Locale } from "@/lib/i18n";
 import { resolveLocale } from "@/lib/locale-params";
 import { SEARCH_QUERY, type SearchAvailableFilter } from "@/lib/queries";
 import { canonicalUrl } from "@/lib/site";
+import { hasInventoryAccess } from "@/lib/storefront-config";
 import { getStaticStorefrontClient } from "@/lib/storefront-static";
 import { toURLSearchParams } from "@/lib/url-params";
 
@@ -38,7 +39,7 @@ type SearchResult = {
 };
 
 /** A `search.nodes` element narrowed to the `Product` branch (includes the
- *  `__typename` discriminator + the `ProductCard` fragment fields). */
+ *  `__typename` discriminator + the `ProductRow` fragment fields). */
 type SearchNode = NonNullable<
   StorefrontApi.ResultOf<typeof SEARCH_QUERY>["search"]
 >["nodes"][number];
@@ -79,6 +80,7 @@ async function fetchSearch(
       after: searchParams.get("after") ?? undefined,
       sortKey: searchSortKey,
       reverse: browse.reverse || undefined,
+      withInventory: hasInventoryAccess(),
       productFilters:
         browse.filters.length > 0
           ? // F13: skill-sanctioned generated-type cast at the query variable
@@ -124,6 +126,7 @@ export default async function SearchPage({ params, searchParams }: PageProps<"/[
       pageInfo={result.pageInfo}
       totalCount={result.totalCount}
       dataSearch={urlSearch.toString()}
+      showStock={hasInventoryAccess()}
     />
   );
 }

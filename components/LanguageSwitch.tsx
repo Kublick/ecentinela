@@ -7,7 +7,7 @@ import { LOCALE_MARKETS, LOCALE_TAGS, localeFromPathname, localizePath, type Loc
 import { useI18n } from "./I18nProvider";
 
 const linkClassName =
-  "text-on-surface focus-visible:outline-accent inline-flex h-11 items-center rounded px-2 text-sm no-underline hover:opacity-70 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2";
+  "text-on-surface focus-visible:outline-focus inline-flex h-11 items-center rounded px-2 text-sm no-underline hover:opacity-70 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2";
 
 /**
  * Link to the same page in the other language (`/products/x` ⇄ `/en/products/x`).

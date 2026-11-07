@@ -10,9 +10,9 @@ import {
   subscribeCartDrawerOpen,
 } from "@/lib/cart-drawer";
 import { plural } from "@/lib/content";
-import { formatPrice } from "@/lib/money";
 
 import { useI18n } from "./I18nProvider";
+import { Price } from "./CurrencyProvider";
 
 /**
  * Cart trigger — a `<button>` that opens the cart drawer via `showModal()`
@@ -22,7 +22,7 @@ import { useI18n } from "./I18nProvider";
  * when the drawer is unavailable.
  */
 export function CartTrigger() {
-  const { content, tag } = useI18n();
+  const { content } = useI18n();
   const totalQuantity = useCart((state) => state.data.totalQuantity);
   const subtotal = useCart((state) => state.data.cost.subtotalAmount);
   const cartDrawerOpen = useSyncExternalStore(
@@ -41,14 +41,14 @@ export function CartTrigger() {
         aria-controls={CART_DRAWER_ID}
         aria-haspopup="dialog"
         aria-expanded={cartDrawerOpen}
-        className="focus-visible:outline-accent relative inline-flex h-11 min-w-11 cursor-pointer items-center justify-center gap-3 rounded bg-transparent px-1 text-white hover:opacity-80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+        className="focus-visible:outline-focus relative inline-flex h-11 min-w-11 cursor-pointer items-center justify-center gap-3 rounded bg-transparent px-1 text-white hover:opacity-80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
         aria-label={cartLabel}
       >
         <CartIcon count={totalQuantity} display={countDisplay} />
         <span className="hidden flex-col items-start leading-tight md:flex" aria-hidden="true">
           <span className="text-xs text-white/80">{plural(content.cart.items, totalQuantity)}</span>
           {totalQuantity > 0 ? (
-            <span className="font-bold tabular-nums">{formatPrice(subtotal, tag)}</span>
+            <span className="font-bold tabular-nums"><Price money={subtotal} /></span>
           ) : null}
         </span>
       </button>
