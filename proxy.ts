@@ -3,6 +3,7 @@ import { getCache } from "@vercel/functions";
 import { NextResponse, type NextFetchEvent, type NextRequest } from "next/server";
 
 import { cartHandlers } from "@/lib/cart-handlers";
+import { subcategoryRedirect } from "@/lib/categories";
 import {
   createCustomerSessionManager,
   createEphemeralSessionManager,
@@ -88,6 +89,9 @@ export async function proxy(request: NextRequest, event: NextFetchEvent) {
     // short-circuited response internally, so no `applyResponseHeaders` here.
     return shopifyRoute;
   }
+
+  const subcategory = subcategoryRedirect(request.nextUrl);
+  if (subcategory) return NextResponse.redirect(subcategory, 308);
 
   // `/es/...` is the internal path of the unprefixed URL: send it there.
   const defaultPrefix = `/${DEFAULT_LOCALE}`;

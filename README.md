@@ -65,6 +65,17 @@ Build arguments are stored in the image's build history, so keep the image on yo
 | `pnpm start` | Run the standalone server after `pnpm build`. |
 | `pnpm lint` | Run ESLint. |
 | `pnpm typecheck` | Run TypeScript and Hydrogen GraphQL checks. |
+| `node --env-file=.env scripts/sync-categories.mjs` | Create or update the categories in Shopify (see below). Dry run unless you add `--apply`. |
+
+## Categories
+
+The 23 categories of e-centinela.com live in `lib/categories.json`, in the live site's order. Each one is a Shopify smart collection with the live site's handle (including oddities like `motores` for "Fusibles y Accesorios") that matches products having **any** of its tags. The tag lists come from the subcategory links on each live category page, minus tags that belong to another category.
+
+- `scripts/sync-categories.mjs` creates the collections (or updates their title and rules) and publishes new ones only to the `hydro-test` Hydrogen channel. It needs `SHOPIFY_ADMIN_TOKEN`, an Admin API token for the store with `write_products` and `write_publications`.
+- `/collections` lists these categories in order. If the store has none of them (mock.shop), it lists every collection instead.
+- Subcategories are product tags. The old URLs `/collections/{handle}/{tag-handle}` redirect (308, in `proxy.ts`) to `/collections/{handle}?filter.p.tag={tag}`. Shopify only applies that filter when the **Tag** filter is enabled in the Search & Discovery app; the same setting shows tags as a filter group on collection pages.
+
+After changing `lib/categories.json`, run the script again with `--apply`.
 
 ## Languages
 
@@ -79,7 +90,7 @@ Spanish (`es-MX`) is the default and has no URL prefix; English lives under `/en
 ## Pages
 
 - `/`: home with hero, featured products, and featured collections.
-- `/collections`: all collections.
+- `/collections`: the e-centinela.com categories (see Categories).
 - `/collections/:handle`: ordering table (part number, description, vendor, datasheet, price, quantity, availability) with one "add to cart" for all rows, plus filters, sort, previous/next pages, and active filter chips. Datasheets come from the `custom.datasheet` product metafield.
 - `/products/:handle`: product page with gallery, URL-synced variants, add to cart, Shop Pay, and related products.
 - `/search`: storefront search with filters, sort, pagination, and predictive search.
