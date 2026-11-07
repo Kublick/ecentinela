@@ -87,6 +87,8 @@ export type CollectionBrowserProps =
       dataSearch: string;
       /** Show stock counts in the table (needs inventory access). */
       showStock: boolean;
+      /** Tag-based subcategory links (`subcategories()` in `lib/categories.ts`). */
+      subcategories: { label: string; href: string }[];
     }
   | {
       mode: "search";
@@ -154,7 +156,7 @@ function SearchViewedTracker({ term, totalCount }: { term: string; totalCount: n
 type CollectionPageProps = Extract<CollectionBrowserProps, { mode: "collection" }>;
 
 function CollectionPage(props: CollectionPageProps) {
-  const { collection, products, availableFilters, pageInfo, showStock } = props;
+  const { collection, products, availableFilters, pageInfo, showStock, subcategories } = props;
   const { locale, content, href } = useI18n();
   const state = useCollection();
   const { formProps } = useCollectionForm();
@@ -187,7 +189,7 @@ function CollectionPage(props: CollectionPageProps) {
         />
       </div>
 
-      <h1 className="type-display mb-4">{collection.title}</h1>
+      <h1 className="text-primary-dark mb-4 text-3xl font-bold">{collection.title}</h1>
       {collection.descriptionHtml ? (
         <div
           className="richtext type-body text-on-surface-secondary mb-6 max-w-prose"
@@ -198,6 +200,12 @@ function CollectionPage(props: CollectionPageProps) {
           {collection.description}
         </p>
       ) : null}
+
+      <SubcategoryChips
+        items={subcategories}
+        activeTags={state.filters.flatMap((filter) => (filter.tag ? [filter.tag] : []))}
+        onNavigate={onNavigate}
+      />
 
       <form
         {...formProps()}
@@ -261,6 +269,63 @@ function CollectionPage(props: CollectionPageProps) {
         </div>
       </form>
     </div>
+  );
+}
+
+/** Subcategory links above the table; the first 12 show, the rest open on demand. */
+function SubcategoryChips({
+  items,
+  activeTags,
+  onNavigate,
+}: {
+  items: { label: string; href: string }[];
+  activeTags: string[];
+  onNavigate: () => void;
+}) {
+  const { content, href } = useI18n();
+  if (items.length === 0) return null;
+
+  const chip = (item: { label: string; href: string }) => {
+    const tags = new URLSearchParams(item.href.split("?")[1]).getAll("filter.p.tag");
+    const active = tags.some((tag) => activeTags.includes(tag));
+    return (
+      <li key={item.href}>
+        <Link
+          href={href(item.href)}
+          onClick={onNavigate}
+          aria-current={active ? "true" : undefined}
+          className={`inline-flex min-h-9 items-center rounded-full border px-3 text-sm whitespace-nowrap no-underline ${
+            active
+              ? "bg-primary border-primary text-white"
+              : "text-primary-dark hover:bg-tint border-[#c9cde6] bg-white"
+          }`}
+        >
+          {item.label}
+        </Link>
+      </li>
+    );
+  };
+
+  return (
+    <nav
+      aria-label={content.collection.subcategories}
+      className="border-border mb-6 rounded-lg border bg-[#f9fafb] p-4"
+    >
+      {/* One scrolling row on phones, wrapped rows from md up. */}
+      <ul role="list" className="scrollbar-none flex gap-2 overflow-x-auto md:flex-wrap">
+        {items.slice(0, 12).map(chip)}
+      </ul>
+      {items.length > 12 ? (
+        <details className="mt-3">
+          <summary className="text-link cursor-pointer text-sm font-semibold">
+            {interpolate(content.collection.allSubcategories, { count: items.length })}
+          </summary>
+          <ul role="list" className="mt-3 flex flex-wrap gap-2">
+            {items.slice(12).map(chip)}
+          </ul>
+        </details>
+      ) : null}
+    </nav>
   );
 }
 

@@ -20,6 +20,20 @@ export const PRODUCT_QUERY = gql(
       description
       descriptionHtml
       requiresSellingPlan
+      datasheet: metafield(namespace: "custom", key: "datasheet") {
+        type
+        value
+        reference {
+          ... on GenericFile {
+            url
+          }
+          ... on MediaImage {
+            image {
+              url
+            }
+          }
+        }
+      }
       options {
         name
         optionValues {

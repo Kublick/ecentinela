@@ -10,6 +10,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useRef } from "react";
 
+import { datasheetHref } from "@/components/ProductTable";
 import { ProductViewedTracker } from "@/components/ProductViewedTracker";
 import { QuantityStepper } from "@/components/QuantityStepper";
 import { openCartDrawer } from "@/lib/cart-drawer";
@@ -91,19 +92,24 @@ function ProductPage({ product }: { product: ProductData }) {
   const onSale = compareAt && Number(compareAt.amount) > Number(price.amount);
 
   const images = galleryImages(product, selectedVariant?.image ?? null);
+  const partNumber = selectedVariant?.sku || product.handle;
+  const datasheetUrl = datasheetHref(product.datasheet);
 
   return (
     <div className="max-w-page px-margin mx-auto w-full py-8">
       <div className="product-grid mb-16 grid grid-cols-1 gap-6 md:gap-12">
         {/* Gallery */}
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-2 gap-2 self-start">
           {images.map((image, index) => (
-            <div key={image.url} className="bg-surface-secondary aspect-square overflow-hidden">
+            <div
+              key={image.url}
+              className={`border-border aspect-square overflow-hidden rounded-lg border bg-white p-4 ${index === 0 ? "col-span-2" : ""}`}
+            >
               <img
                 src={shopifyImageUrl(image.url, { width: index === 0 ? 800 : 400 })}
                 srcSet={srcSetFor(image.url, { width: index === 0 ? 800 : 400 })}
                 alt={image.altText ?? product.title}
-                className="h-full w-full object-cover"
+                className="h-full w-full object-contain"
                 loading={index === 0 ? "eager" : "lazy"}
                 {...(index === 0 ? { fetchPriority: "high" } : {})}
               />
@@ -113,23 +119,41 @@ function ProductPage({ product }: { product: ProductData }) {
 
         {/* Info column */}
         <div className="flex flex-col gap-4 md:sticky md:top-8 md:self-start">
-          <h1 className="type-display">{product.title}</h1>
+          <h1 className="text-primary-dark font-mono text-3xl font-semibold break-all uppercase md:text-4xl">
+            {partNumber}
+          </h1>
+          <p className="text-xl leading-snug">{product.title}</p>
           {product.vendor ? (
-            <p className="text-on-surface-secondary text-sm">{product.vendor}</p>
+            <p className="text-on-surface-secondary">
+              {content.product.brand}: <strong className="text-on-surface">{product.vendor}</strong>
+            </p>
           ) : null}
 
-          <div className="inline-flex flex-wrap items-baseline gap-2 text-lg">
-            <span className={onSale ? "text-sale font-medium" : "text-on-surface font-medium"}>
-              {formatPrice(price, tag)}
-            </span>
-            {onSale && compareAt ? (
-              <s className="text-compare text-base">{formatPrice(compareAt, tag)}</s>
+          <div className="border-border flex flex-col gap-1 border-y py-4">
+            <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+              <span className="text-price text-3xl font-bold tabular-nums">
+                {formatPrice(price, tag)}
+              </span>
+              {onSale && compareAt ? (
+                <s className="text-compare text-base">{formatPrice(compareAt, tag)}</s>
+              ) : null}
+              <span className="text-on-surface-secondary">{content.product.taxIncluded}</span>
+            </div>
+            <p className="text-on-surface-secondary text-sm">{content.product.invoice}</p>
+            {selectedVariant ? (
+              <span
+                className={`mt-2 inline-flex self-start rounded-full px-3 py-1 text-sm font-semibold ${
+                  selectedVariant.availableForSale
+                    ? "bg-[#e3f2e6] text-[#1b5e2a]"
+                    : "text-on-surface-secondary bg-[#f1f2f5]"
+                }`}
+              >
+                {selectedVariant.availableForSale
+                  ? content.product.inventory.inStock
+                  : content.product.soldOut}
+              </span>
             ) : null}
           </div>
-
-          {selectedVariant && !selectedVariant.availableForSale ? (
-            <p className="text-on-surface-secondary text-sm">{content.product.soldOut}</p>
-          ) : null}
 
           {/* Variant options — hidden when the product has no real options
               (e.g. a single-variant product). */}
@@ -257,7 +281,7 @@ function ProductPage({ product }: { product: ProductData }) {
                   firstOptionRef.current?.focus();
                 }
               }}
-              className="rounded-button button-primary focus-visible:outline-accent inline-flex h-11 items-center justify-center px-4 text-sm font-medium focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 motion-safe:transition"
+              className="rounded-button bg-lime text-primary-dark focus-visible:outline-accent inline-flex h-12 items-center justify-center px-4 text-base font-bold hover:brightness-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 aria-disabled:opacity-50"
             >
               {addable
                 ? content.product.addToCart
@@ -275,6 +299,35 @@ function ProductPage({ product }: { product: ProductData }) {
               borderRadius="0.5rem"
             />
           ) : null}
+
+          {datasheetUrl ? (
+            <a
+              href={datasheetUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="rounded-button bg-tint text-primary-dark inline-flex h-11 items-center gap-2 self-start px-4 font-bold no-underline hover:underline"
+            >
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinejoin="round"
+                className="size-5"
+                aria-hidden="true"
+              >
+                <path d="M6 3h8l4 4v14H6z" />
+                <path d="M14 3v4h4" />
+              </svg>
+              {content.product.datasheet}
+            </a>
+          ) : null}
+
+          <ul role="list" className="text-on-surface-secondary flex flex-col gap-1 text-sm">
+            {content.product.perks.map((perk) => (
+              <li key={perk}>{perk}</li>
+            ))}
+          </ul>
 
           {errors.userErrors.length > 0 ? (
             <div role="alert" className="text-sale text-sm">

@@ -5,6 +5,7 @@ import { cacheLife, cacheTag } from "next/cache";
 import { notFound } from "next/navigation";
 
 import { CollectionBrowser } from "@/components/CollectionBrowser";
+import { subcategories } from "@/lib/categories";
 import { getContent } from "@/lib/content";
 import { localeAlternates, localizePath, type Locale } from "@/lib/i18n";
 import { resolveLocale } from "@/lib/locale-params";
@@ -146,6 +147,7 @@ export default async function CollectionPage({ params, searchParams }: Props) {
       pageInfo={pageInfo}
       dataSearch={urlSearch.toString()}
       showStock={hasInventoryAccess()}
+      subcategories={subcategories(collection.handle)}
     />
   );
 }

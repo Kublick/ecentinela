@@ -143,12 +143,6 @@ export const COLLECTION_CARD_FRAGMENT = gql(`
   }
 `);
 
-/** Thin query that spreads the `CollectionCard` fragment for type derivation. */
-export const COLLECTION_CARD_QUERY = gql(
-  `query CollectionCardQuery { collection(handle: "") { ...CollectionCard } }`,
-  [COLLECTION_CARD_FRAGMENT],
-);
-
 /**
  * Variant fields fragment — one reusable shape for
  * `firstSelectableVariant`, `selectedOrFirstAvailableVariant`, and

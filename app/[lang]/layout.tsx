@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { IBM_Plex_Mono, Inter } from "next/font/google";
 
 import "../globals.css";
 
@@ -15,6 +16,13 @@ import { getMarket } from "@/lib/markets";
 import { isIndexingAllowed, SITE_ORIGIN } from "@/lib/site";
 
 import { AppShell } from "./app-shell";
+
+const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
+const plexMono = IBM_Plex_Mono({
+  subsets: ["latin"],
+  weight: ["500", "600"],
+  variable: "--font-plex-mono",
+});
 
 export function generateStaticParams() {
   return LOCALES.map((lang) => ({ lang }));
@@ -45,7 +53,7 @@ export async function generateMetadata({ params }: LayoutProps<"/[lang]">): Prom
     // Sandbox/preview deployments: `noindex` on every page (see `isIndexingAllowed`).
     ...(isIndexingAllowed() ? {} : { robots: { index: false, follow: false } }),
     icons: {
-      icon: { url: "/favicon.svg", type: "image/svg+xml" },
+      icon: { url: "/brand/favicon.ico" },
     },
   };
 }
@@ -55,7 +63,7 @@ export default async function RootLayout({ children, params }: LayoutProps<"/[la
   const content = getContent(locale);
   const { currency } = await getAnalyticsShop();
   return (
-    <html lang={LOCALE_TAGS[locale]}>
+    <html lang={LOCALE_TAGS[locale]} className={`${inter.variable} ${plexMono.variable}`}>
       <head>
         <ShopifyScriptsWithNavigation shop={shop} currency={currency} i18n={getMarket(locale)} />
       </head>
@@ -64,9 +72,16 @@ export default async function RootLayout({ children, params }: LayoutProps<"/[la
           <div
             role="region"
             aria-label={content.announcement.label}
-            className="bg-on-surface px-margin py-2.5 text-center"
+            className="bg-secondary text-sm text-white"
           >
-            <p className="type-body-sm text-surface">{content.announcement.text}</p>
+            <div className="max-w-page px-margin mx-auto flex flex-wrap items-center justify-center gap-x-6 gap-y-1 py-2 md:justify-between">
+              <p className="font-medium">{content.announcement.text}</p>
+              <p className="hidden gap-5 md:flex">
+                {content.announcement.extras.map((extra) => (
+                  <span key={extra}>{extra}</span>
+                ))}
+              </p>
+            </div>
           </div>
 
           <Suspense

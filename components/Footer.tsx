@@ -4,31 +4,36 @@ import { getContent } from "@/lib/content";
 import { localizePath, type Locale } from "@/lib/i18n";
 
 const footerLinkClass =
-  "min-h-touch-target text-on-surface-secondary hover:text-on-surface focus-visible:outline-accent inline-flex items-center font-normal no-underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 motion-safe:transition-colors";
+  "min-h-touch-target text-link inline-flex items-center no-underline hover:underline";
 
 /**
  * Site footer — shared chrome, server-rendered. Includes the `/cart` link that
  * keeps the cart route reachable when the drawer is unavailable.
  */
-export function Footer({ locale, shopName = "CORE" }: { locale: Locale; shopName?: string }) {
+export function Footer({ locale }: { locale: Locale }) {
   const content = getContent(locale);
   return (
-    <footer className="max-w-page px-margin mx-auto w-full">
-      <div className="border-border grid grid-cols-1 gap-8 border-t py-12 text-sm md:grid-cols-2 lg:grid-cols-4">
-        <div>
-          <h2 className="type-body-sm text-on-surface mb-4 font-medium">{shopName}</h2>
-          <p className="text-on-surface-secondary">
-            &copy; {new Date().getFullYear()} {shopName}
-          </p>
+    <footer className="border-primary border-t-[6px] text-sm">
+      <div className="max-w-page px-margin mx-auto grid grid-cols-1 gap-8 py-10 md:grid-cols-2 lg:grid-cols-4">
+        <div className="text-on-surface-secondary flex flex-col gap-3 leading-relaxed lg:col-span-2">
+          <img
+            src="/brand/logo-centinela.png"
+            alt="Eléctrica Centinela"
+            width={246}
+            height={45}
+            loading="lazy"
+            className="h-auto w-52"
+          />
+          <p className="max-w-md">{content.footer.address}</p>
+          <a href={content.header.phoneHref} className="text-link self-start font-semibold">
+            {content.header.phone}
+          </a>
         </div>
         <nav aria-labelledby="footer-quick-links-heading">
-          <h2
-            className="type-body-sm text-on-surface mb-4 font-medium"
-            id="footer-quick-links-heading"
-          >
+          <h2 className="text-primary-dark mb-2 font-bold" id="footer-quick-links-heading">
             {content.footer.quickLinks}
           </h2>
-          <ul role="list" className="flex flex-col gap-2">
+          <ul role="list" className="flex flex-col">
             {content.footer.links.map((link) => (
               <li key={link.href}>
                 <Link href={localizePath(locale, link.href)} className={footerLinkClass}>
@@ -36,47 +41,38 @@ export function Footer({ locale, shopName = "CORE" }: { locale: Locale; shopName
                 </Link>
               </li>
             ))}
-          </ul>
-        </nav>
-        <nav aria-labelledby="footer-customer-care-heading">
-          <h2
-            className="type-body-sm text-on-surface mb-4 font-medium"
-            id="footer-customer-care-heading"
-          >
-            {content.footer.customerCare}
-          </h2>
-          <ul role="list" className="flex flex-col gap-2">
             <li>
               <Link href={localizePath(locale, "/search")} className={footerLinkClass}>
                 {content.footer.search}
               </Link>
             </li>
+          </ul>
+        </nav>
+        <nav aria-labelledby="footer-customer-care-heading">
+          <h2 className="text-primary-dark mb-2 font-bold" id="footer-customer-care-heading">
+            {content.footer.customerCare}
+          </h2>
+          <ul role="list" className="flex flex-col">
             <li>
               <Link href={localizePath(locale, "/cart")} className={footerLinkClass}>
                 {content.cart.title}
               </Link>
             </li>
+            <li>
+              <Link href={localizePath(locale, "/account")} className={footerLinkClass}>
+                {content.footer.account}
+              </Link>
+            </li>
           </ul>
         </nav>
-        <div>
-          <h2 className="type-body-sm text-on-surface mb-4 font-medium">
-            {content.footer.paymentMethods}
-          </h2>
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="border-border text-on-surface-secondary rounded-sm border px-2 py-1 text-xs">
-              Visa
-            </span>
-            <span className="border-border text-on-surface-secondary rounded-sm border px-2 py-1 text-xs">
-              Mastercard
-            </span>
-            <span className="border-border text-on-surface-secondary rounded-sm border px-2 py-1 text-xs">
-              PayPal
-            </span>
-            <span className="border-border text-on-surface-secondary rounded-sm border px-2 py-1 text-xs">
-              Shop Pay
-            </span>
-          </div>
-        </div>
+      </div>
+      <div className="max-w-page px-margin border-border text-on-surface-secondary mx-auto flex flex-wrap justify-between gap-x-6 gap-y-2 border-t py-5">
+        <p>
+          &copy; {new Date().getFullYear()} {content.footer.legalName}
+        </p>
+        <p>
+          {content.footer.paymentMethods}: Shop Pay · PayPal · Visa · Mastercard
+        </p>
       </div>
     </footer>
   );

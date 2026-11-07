@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 
 import { useI18n } from "./I18nProvider";
+import { LanguageSwitch } from "./LanguageSwitch";
 
 /**
  * Mobile nav — a `<dialog>` opened via state, with an always-rendered fallback
@@ -11,8 +12,14 @@ import { useI18n } from "./I18nProvider";
  * contains the same nav items as the desktop nav. Server-rendered baseline is
  * the hidden dialog content (links are real `<Link>`s).
  */
-export function MobileNavDialog() {
-  const { content, href } = useI18n();
+export function MobileNavDialog({
+  categories,
+  allHref,
+}: {
+  categories: { title: string; href: string }[];
+  allHref: string;
+}) {
+  const { content } = useI18n();
   const [open, setOpen] = useState(false);
   const dialogRef = useRef<HTMLDialogElement>(null);
 
@@ -39,7 +46,7 @@ export function MobileNavDialog() {
           width="20"
           height="20"
           alt=""
-          className="size-5"
+          className="size-5 invert"
           aria-hidden="true"
         />
       </button>
@@ -76,19 +83,30 @@ export function MobileNavDialog() {
           </div>
           <div className="flex-1 overflow-y-auto p-4">
             <nav aria-label={content.header.mobileNavigation}>
+              <p className="text-primary-dark mb-2 font-bold">{content.header.categories}</p>
               <ul role="list" className="flex flex-col">
-                {content.header.navItems.map((item) => (
-                  <li key={item.href}>
+                {categories.map((category) => (
+                  <li key={category.href}>
                     <Link
-                      href={href(item.href)}
+                      href={category.href}
                       onClick={() => setOpen(false)}
-                      className="text-on-surface flex items-center rounded-sm py-3 text-xl font-normal no-underline hover:opacity-70 motion-safe:transition-opacity"
+                      className="text-on-surface border-border flex min-h-11 items-center border-b py-2 no-underline hover:opacity-70"
                     >
-                      {item.label}
+                      {category.title}
                     </Link>
                   </li>
                 ))}
               </ul>
+              <Link
+                href={allHref}
+                onClick={() => setOpen(false)}
+                className="text-link mt-4 inline-flex min-h-11 items-center font-semibold"
+              >
+                {content.header.allCategories}
+              </Link>
+              <div className="mt-2">
+                <LanguageSwitch />
+              </div>
             </nav>
           </div>
         </div>

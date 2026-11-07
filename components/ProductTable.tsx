@@ -137,7 +137,7 @@ export function ProductTable({
       onClick={() => void addSelected()}
       aria-describedby={statusId}
       aria-disabled={status.kind === "adding"}
-      className="rounded-button button-primary focus-visible:outline-accent inline-flex h-11 items-center justify-center px-5 text-sm font-medium focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+      className="rounded-button bg-lime text-primary-dark inline-flex h-11 items-center justify-center px-5 text-sm font-bold hover:brightness-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
     >
       {status.kind === "adding"
         ? copy.adding
@@ -155,8 +155,8 @@ export function ProductTable({
             {interpolate(copy.caption, { collection: collectionTitle })}
           </caption>
           <thead>
-            <tr className="border-border text-on-surface-secondary border-b text-xs">
-              <th scope="col" className="py-2 pe-3 font-medium">
+            <tr className="bg-tint text-primary-dark text-xs">
+              <th scope="col" className="py-2 ps-3 pe-3 font-semibold">
                 {copy.partNumber}
               </th>
               <th scope="col" className="hidden py-2 pe-3 font-medium md:table-cell">
@@ -170,6 +170,7 @@ export function ProductTable({
               </th>
               <th scope="col" className="py-2 pe-3 text-end font-medium">
                 {interpolate(copy.price, { currency: currencyCode })}
+                <span className="block font-normal">{copy.taxIncluded}</span>
               </th>
               <th scope="col" className="py-2 pe-3 font-medium">
                 {copy.order}
@@ -195,16 +196,44 @@ export function ProductTable({
         </table>
       </div>
 
-      <div className="flex flex-wrap items-center justify-end gap-3">
+      {/* Pinned to the bottom of the screen while the table is in view. */}
+      <div className="bg-primary-dark sticky bottom-0 z-10 flex flex-wrap items-center gap-x-6 gap-y-2 rounded-t-lg px-4 py-3 text-white shadow-[0_-6px_18px_rgb(20_22_60/0.18)]">
+        <p className="tabular-nums">
+          {selectedLines.length > 0 ? (
+            <strong>
+              {plural(copy.lines, selectedLines.length)} ·{" "}
+              {plural(
+                copy.pieces,
+                selectedLines.reduce((sum, line) => sum + line.quantity, 0),
+              )}
+            </strong>
+          ) : (
+            <span className="text-sm text-white/80">{copy.barHint}</span>
+          )}
+        </p>
         <p
           id={statusId}
           role="status"
           aria-live="polite"
-          className={`text-sm ${status.kind === "error" ? "text-sale" : "text-on-surface-secondary"}`}
+          className={`text-sm ${status.kind === "error" ? "font-semibold text-[#ffc9c9]" : ""}`}
         >
           {status.kind === "success" || status.kind === "error" ? status.message : ""}
         </p>
-        {addButton}
+        <div className="ms-auto flex items-center gap-3">
+          {selectedLines.length > 0 ? (
+            <button
+              type="button"
+              onClick={() => {
+                setQuantities({});
+                setStatus({ kind: "idle" });
+              }}
+              className="rounded-button h-11 border border-white px-4 text-sm font-semibold hover:bg-white/10"
+            >
+              {copy.clear}
+            </button>
+          ) : null}
+          {addButton}
+        </div>
       </div>
     </div>
   );
@@ -239,7 +268,7 @@ function ProductTableRow({
 
   return (
     <tr className="border-border border-b align-top">
-      <td className="py-3 pe-3">
+      <td className="py-3 ps-3 pe-3">
         <Link
           href={productHref}
           className="text-on-surface flex items-start gap-3 no-underline hover:opacity-70"
@@ -257,7 +286,7 @@ function ProductTableRow({
             <span className="bg-surface-secondary size-12 shrink-0 rounded" />
           )}
           <span className="flex flex-col gap-1">
-            <span className="font-medium">{partNumber}</span>
+            <span className="text-link font-mono font-semibold uppercase">{partNumber}</span>
             <span className="text-on-surface-secondary line-clamp-2 text-xs md:hidden">
               {product.title}
             </span>
@@ -293,7 +322,7 @@ function ProductTableRow({
         )}
       </td>
       <td className="py-3 pe-3 text-end whitespace-nowrap">
-        <span className={onSale ? "text-sale font-medium" : "font-medium"}>
+        <span className="text-price font-bold">
           {formatPrice(variant.price, tag)}
         </span>
         {onSale && compareAt ? (
@@ -324,8 +353,16 @@ function ProductTableRow({
           {availability}
         </span>
       </td>
-      <td className="text-on-surface-secondary hidden py-3 text-xs sm:table-cell">
-        {availability}
+      <td className="hidden py-3 pe-3 text-xs sm:table-cell">
+        <span
+          className={`inline-flex rounded-full px-2 py-0.5 font-semibold whitespace-nowrap ${
+            variant.availableForSale
+              ? "bg-[#e3f2e6] text-[#1b5e2a]"
+              : "text-on-surface-secondary bg-[#f1f2f5]"
+          }`}
+        >
+          {availability}
+        </span>
       </td>
     </tr>
   );
@@ -345,7 +382,7 @@ function availabilityLabel(
 }
 
 /** Datasheet URL from the `custom.datasheet` metafield (file reference or URL). */
-function datasheetHref(datasheet: ProductRowData["datasheet"]): string | null {
+export function datasheetHref(datasheet: ProductRowData["datasheet"]): string | null {
   if (!datasheet) return null;
   const reference = datasheet.reference;
   if (reference && "url" in reference && reference.url) return reference.url;

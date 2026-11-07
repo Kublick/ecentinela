@@ -2,29 +2,6 @@ import { gql, type StorefrontApi } from "@shopify/hydrogen";
 
 import { COLLECTION_CARD_FRAGMENT, PRODUCT_CARD_FRAGMENT, PRODUCT_ROW_FRAGMENT } from "./fragments";
 
-/**
- * Home query — best-selling products (first 8) + featured collections (first 3).
- * Used by the home page (`hydrogen-setup` / `steps/3-build-home-page.md`).
- */
-export const HOME_QUERY = gql(
-  `
-  query Home($country: CountryCode, $language: LanguageCode)
-  @inContext(country: $country, language: $language) {
-    featuredProducts: products(first: 8, sortKey: BEST_SELLING) {
-      nodes {
-        ...ProductCard
-      }
-    }
-    featuredCollections: collections(first: 3) {
-      nodes {
-        ...CollectionCard
-      }
-    }
-  }
-`,
-  [PRODUCT_CARD_FRAGMENT, COLLECTION_CARD_FRAGMENT],
-);
-
 /** Collections index query (`collections(first: 24)`). */
 export const COLLECTIONS_QUERY = gql(
   `
