@@ -4,7 +4,7 @@ import type { StorefrontApi } from "@shopify/hydrogen";
 import Link from "next/link";
 import { useId, useState, type KeyboardEvent, type ReactNode } from "react";
 
-import { useCart } from "@/lib/cart";
+import { addLinesToCart, useCart } from "@/lib/cart";
 import { openCartDrawer } from "@/lib/cart-drawer";
 import { interpolate, plural } from "@/lib/content";
 import type { PRODUCT_ROW_QUERY } from "@/lib/fragments";
@@ -92,51 +92,20 @@ export function ProductTable({
       return;
     }
 
-    const updateCart = window.Shopify?.actions?.updateCart;
-    if (!updateCart || updateCart.isDefault() || cartLoading) {
-      setStatus({ kind: "error", message: copy.cartNotReady });
+    setStatus({ kind: "adding" });
+    const error = await addLinesToCart(
+      selectedLines,
+      { loading: cartLoading, readyPromise: cartReady },
+      copy,
+    );
+    if (error) {
+      setStatus({ kind: "error", message: error });
       return;
     }
 
-    setStatus({ kind: "adding" });
-    try {
-      await cartReady;
-      const result = await updateCart(
-        {
-          lines: selectedLines.map(({ variant, quantity }) => ({
-            merchandiseId: variant.id,
-            quantity,
-          })),
-        },
-        {
-          event: {
-            context: "product",
-            // Previews so the new lines show before Shopify responds.
-            detail: {
-              products: selectedLines.map(({ product, variant }) => ({
-                id: variant.id,
-                price: variant.price,
-                title: variant.title,
-                product: { title: product.title, handle: product.handle },
-                image: product.featuredImage,
-              })),
-            },
-          },
-        },
-      );
-
-      const userError = result.userErrors?.[0]?.message;
-      if (userError) {
-        setStatus({ kind: "error", message: userError });
-        return;
-      }
-
-      setQuantities({});
-      setStatus({ kind: "success", message: plural(copy.added, selectedLines.length) });
-      openCartDrawer();
-    } catch {
-      setStatus({ kind: "error", message: copy.addError });
-    }
+    setQuantities({});
+    setStatus({ kind: "success", message: plural(copy.added, selectedLines.length) });
+    openCartDrawer();
   }
 
   function onQuantityKeyDown(event: KeyboardEvent<HTMLInputElement>) {

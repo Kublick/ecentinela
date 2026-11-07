@@ -107,7 +107,29 @@ export const PRODUCT_QUERY = gql(
   [VARIANT_FIELDS_FRAGMENT],
 );
 
-/** Related products query for the "you may also like" strip. */
+const RELATED_PRODUCT_FRAGMENT = gql(
+  `
+  fragment RelatedProduct on Product {
+    ...ProductCard
+    selectedOrFirstAvailableVariant {
+      id
+      title
+      availableForSale
+      price {
+        amount
+        currencyCode
+      }
+    }
+  }
+`,
+  [PRODUCT_CARD_FRAGMENT],
+);
+
+/**
+ * Related products query for the "you may also like" reel (cards + quick add):
+ * the first collection's in-stock products, plus its first products as a
+ * fallback, so the page can list in-stock items first.
+ */
 export const RELATED_PRODUCTS_QUERY = gql(
   `
   query RelatedProducts($handle: String!, $country: CountryCode, $language: LanguageCode)
@@ -115,9 +137,14 @@ export const RELATED_PRODUCTS_QUERY = gql(
     product(handle: $handle) {
       relatedProducts: collections(first: 1) {
         nodes {
-          products(first: 5) {
+          inStock: products(first: 15, filters: [{ available: true }]) {
             nodes {
-              ...ProductCard
+              ...RelatedProduct
+            }
+          }
+          products(first: 15) {
+            nodes {
+              ...RelatedProduct
             }
           }
         }
@@ -125,7 +152,7 @@ export const RELATED_PRODUCTS_QUERY = gql(
     }
   }
 `,
-  [PRODUCT_CARD_FRAGMENT],
+  [RELATED_PRODUCT_FRAGMENT],
 );
 
 /** The typed product data consumed by the React product bindings. */

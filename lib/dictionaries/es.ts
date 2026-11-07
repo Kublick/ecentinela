@@ -161,6 +161,8 @@ export const es = {
     soldOut: "Agotado",
     description: "Descripción",
     relatedProducts: "Productos relacionados",
+    relatedPrevious: "Productos relacionados anteriores",
+    relatedNext: "Más productos relacionados",
     fallbackTitle: "Producto",
     alternateImage: "{{ title }}, imagen alternativa",
     price: "Precio: ",

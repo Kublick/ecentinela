@@ -1,12 +1,14 @@
-import { getSelectedProductOptions } from "@shopify/hydrogen";
+import { getSelectedProductOptions, type StorefrontApi } from "@shopify/hydrogen";
 import type { Metadata } from "next";
 import { cacheLife, cacheTag } from "next/cache";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 
 import { Breadcrumbs, type Crumb } from "@/components/Breadcrumbs";
-import { ProductCard, type ProductCardData } from "@/components/ProductCard";
+import { ProductCard } from "@/components/ProductCard";
 import { ProductDetails } from "@/components/ProductDetails";
+import { ProductReel } from "@/components/ProductReel";
+import { QuickAddButton } from "@/components/QuickAddButton";
 import { getContent } from "@/lib/content";
 import { localeAlternates, localizePath, type Locale } from "@/lib/i18n";
 import { resolveLocale } from "@/lib/locale-params";
@@ -152,7 +154,10 @@ async function RelatedProducts({ locale, handle }: { locale: Locale; handle: str
   cacheLife("minutes");
   cacheTag("products");
 
-  let related: ProductCardData[] = [];
+  type RelatedProduct = NonNullable<
+    StorefrontApi.ResultOf<typeof RELATED_PRODUCTS_QUERY>["product"]
+  >["relatedProducts"]["nodes"][number]["products"]["nodes"][number];
+  let related: RelatedProduct[] = [];
   try {
     const { data, errors } = await getStaticStorefrontClient(locale).graphql(RELATED_PRODUCTS_QUERY, {
       variables: { handle },
@@ -161,8 +166,15 @@ async function RelatedProducts({ locale, handle }: { locale: Locale; handle: str
       console.error("[hydrogen] Related products query failed", errors);
     }
     if (data?.product?.relatedProducts) {
-      const all = data.product.relatedProducts.nodes.flatMap((node) => node.products.nodes);
-      related = all.filter((p) => p.handle !== handle).slice(0, 4);
+      // In-stock products first, then the rest of the collection (deduped).
+      const all = data.product.relatedProducts.nodes.flatMap((node) => [
+        ...node.inStock.nodes,
+        ...node.products.nodes,
+      ]);
+      const seen = new Set([handle]);
+      related = all
+        .filter((p) => !seen.has(p.handle) && Boolean(seen.add(p.handle)))
+        .slice(0, 14);
     }
   } catch (error) {
     // Related products are an enhancement; never break the PDP.
@@ -171,16 +183,26 @@ async function RelatedProducts({ locale, handle }: { locale: Locale; handle: str
 
   if (related.length === 0) return null;
 
+  const content = getContent(locale);
   return (
-    <section className="max-w-page px-margin mx-auto mt-16">
-      <h2 className="type-heading-xl mb-6">{getContent(locale).product.relatedProducts}</h2>
-      <ul role="list" className="grid grid-cols-2 gap-x-1 gap-y-10 contain-paint lg:grid-cols-4">
+    <section className="max-w-page px-margin mx-auto mt-16 w-full">
+      <ProductReel
+        title={content.product.relatedProducts}
+        previousLabel={content.product.relatedPrevious}
+        nextLabel={content.product.relatedNext}
+      >
         {related.map((relatedProduct) => (
-          <li key={relatedProduct.id}>
+          <li key={relatedProduct.id} className="flex flex-col gap-3">
             <ProductCard product={relatedProduct} locale={locale} loading="lazy" />
+            <div className="mt-auto">
+              <QuickAddButton
+                product={relatedProduct}
+                variant={relatedProduct.selectedOrFirstAvailableVariant ?? null}
+              />
+            </div>
           </li>
         ))}
-      </ul>
+      </ProductReel>
     </section>
   );
 }
