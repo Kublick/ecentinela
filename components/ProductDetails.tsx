@@ -156,11 +156,7 @@ function ProductPage({ product }: { product: ProductData }) {
                     : "text-on-surface-secondary bg-muted"
                 }`}
               >
-                {soldOut
-                  ? content.product.soldOut
-                  : callOnly
-                    ? content.collection.table.onRequest
-                    : content.product.inventory.inStock}
+                {stockLabel({ soldOut, callOnly, quantity: selectedVariant.quantityAvailable, content })}
               </span>
             ) : null}
           </div>
@@ -400,4 +396,24 @@ function variantUrl(
   });
   const query = params.toString();
   return `/products/${handle}${query ? `?${query}` : ""}`;
+}
+
+/** Badge under the price: sold out, then price on request, then the stock count when known. */
+function stockLabel({
+  soldOut,
+  callOnly,
+  quantity,
+  content,
+}: {
+  soldOut: boolean;
+  callOnly: boolean;
+  quantity: number | null | undefined;
+  content: ReturnType<typeof useI18n>["content"];
+}): string {
+  if (soldOut) return content.product.soldOut;
+  if (callOnly) return content.collection.table.onRequest;
+  if (quantity && quantity > 0) {
+    return interpolate(content.collection.table.stockCount, { count: quantity });
+  }
+  return content.product.inventory.inStock;
 }

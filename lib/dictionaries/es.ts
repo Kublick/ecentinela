@@ -274,6 +274,8 @@ export const es = {
     viewAll: "Ver todos los resultados",
     searching: "Buscando…",
     products: "Productos",
+    categories: "Categorías",
+    suggestions: "Sugerencias",
   },
   home: {
     hero: {

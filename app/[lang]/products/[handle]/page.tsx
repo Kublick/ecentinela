@@ -13,6 +13,7 @@ import { resolveLocale } from "@/lib/locale-params";
 import { galleryImages } from "@/lib/product-gallery";
 import { PRODUCT_QUERY, RELATED_PRODUCTS_QUERY, type ProductData } from "@/lib/product-query";
 import { canonicalUrl, jsonLdScript } from "@/lib/site";
+import { hasInventoryAccess } from "@/lib/storefront-config";
 import { getStaticStorefrontClient } from "@/lib/storefront-static";
 import { toURLSearchParams } from "@/lib/url-params";
 
@@ -58,7 +59,7 @@ async function fetchProduct(
   });
 
   const { data, errors } = await getStaticStorefrontClient(locale).graphql(PRODUCT_QUERY, {
-    variables: { handle, selectedOptions },
+    variables: { handle, selectedOptions, withInventory: hasInventoryAccess() },
   });
 
   if (errors) {

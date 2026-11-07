@@ -178,5 +178,6 @@ export const VARIANT_FIELDS_FRAGMENT = gql(`
       handle
     }
     sku
+    quantityAvailable @include(if: $withInventory)
   }
 `);
