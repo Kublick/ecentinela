@@ -5,7 +5,7 @@ import { localizePath, type Locale } from "@/lib/i18n";
 import { isCustomerAccountsAvailable } from "@/lib/storefront-config";
 
 const accountLinkClassName =
-  "focus-visible:outline-accent inline-flex h-11 w-11 items-center justify-center rounded no-underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 motion-safe:transition motion-safe:active:scale-[0.97] hover:opacity-70";
+  "focus-visible:outline-focus inline-flex h-11 w-11 items-center justify-center rounded no-underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 motion-safe:transition motion-safe:active:scale-[0.97] hover:opacity-70";
 
 /**
  * Header account link — an async Server Component resolved under `<Suspense>`

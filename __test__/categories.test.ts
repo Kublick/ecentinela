@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { subcategoryRedirect } from "../lib/categories.ts";
+import { subcategories, subcategoryRedirect } from "../lib/categories.ts";
 
 const redirect = (path: string) => subcategoryRedirect(new URL(path, "https://shop.test"))?.href;
 
@@ -14,6 +14,12 @@ test("old subcategory URLs redirect to the tag-filtered collection", () => {
     redirect("/en/collections/control-de-motores/control-de-motores"),
     "https://shop.test/en/collections/control-de-motores?filter.p.tag=Control+de+Motores&filter.p.tag=Control+de+motores",
   );
+});
+
+test("subcategories sort numbers by value and skip the category's own tag", () => {
+  const labels = subcategories("control-de-motores").map((sub) => sub.label);
+  assert.ok(labels.indexOf("ABB Contactores 5-10 HP") < labels.indexOf("ABB Contactores 125-150 HP"));
+  assert.ok(!labels.some((label) => /^control de motores$/i.test(label)));
 });
 
 test("other paths are left alone", () => {

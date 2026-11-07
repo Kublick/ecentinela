@@ -4,13 +4,13 @@ import { useEffect, useRef, useState } from "react";
 
 import { useCart, useCartForm, useSuspenseCart } from "@/lib/cart";
 import { interpolate } from "@/lib/content";
-import { formatPrice } from "@/lib/money";
 
 import { CartLineItem } from "./CartLineItem";
 import { useI18n } from "./I18nProvider";
+import { ConvertedPriceNote, Price } from "./CurrencyProvider";
 
 export function CartContent() {
-  const { content, tag } = useI18n();
+  const { content } = useI18n();
   const lineRefs = useRef(new Map<string, HTMLLIElement>());
   const discountRemoveRefs = useRef(new Map<string, HTMLButtonElement>());
   const pendingRemovalLineId = useRef<string | null>(null);
@@ -165,12 +165,13 @@ export function CartContent() {
                 <span
                   className={`text-on-surface text-base font-medium ${isPending ? "text-on-surface-secondary" : ""}`}
                 >
-                  {formatPrice(subtotal, tag)}
+                  <Price money={subtotal} />
                 </span>
               </div>
               <p className="text-on-surface-secondary text-xs">
                 {content.cart.taxesAndShippingAtCheckout}
               </p>
+              <ConvertedPriceNote className="text-on-surface-secondary text-xs" />
             </div>
           </div>
         </div>

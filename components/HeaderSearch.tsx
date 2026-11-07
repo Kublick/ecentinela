@@ -13,10 +13,10 @@ import { useState, type ReactNode } from "react";
 import { matchCategories, type Category } from "@/lib/category-search";
 import { interpolate } from "@/lib/content";
 import { shopifyImageUrl } from "@/lib/image";
-import { formatPrice } from "@/lib/money";
 import type { HeaderSearchData } from "@/lib/predictive-search-handlers";
 import { routeTemplates } from "@/lib/route-templates";
 
+import { Price } from "./CurrencyProvider";
 import { useI18n } from "./I18nProvider";
 
 const RESULTS_ID = "header-search-results";
@@ -188,7 +188,7 @@ function ProductResult({
   term: string;
   onNavigate: () => void;
 }) {
-  const { href, tag } = useI18n();
+  const { href } = useI18n();
   const variant = product.selectedOrFirstAvailableVariant;
   const image = variant?.image;
 
@@ -220,7 +220,9 @@ function ProductResult({
             <span className="text-on-surface-secondary line-clamp-3 text-xs">{product.description}</span>
           ) : null}
           {variant?.price ? (
-            <span className="text-price font-bold">{formatPrice(variant.price, tag)}</span>
+            <span className="text-price font-bold">
+              <Price money={variant.price} />
+            </span>
           ) : null}
         </span>
       </Link>

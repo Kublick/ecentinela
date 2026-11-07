@@ -25,7 +25,10 @@ export function Footer({ locale }: { locale: Locale }) {
             className="h-auto w-52"
           />
           <p className="max-w-md">{content.footer.address}</p>
-          <a href={content.header.phoneHref} className="text-link self-start font-semibold">
+          <a
+            href={content.header.phoneHref}
+            className="text-link inline-flex min-h-11 items-center self-start font-semibold md:min-h-6"
+          >
             {content.header.phone}
           </a>
         </div>

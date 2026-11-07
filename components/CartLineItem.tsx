@@ -3,9 +3,9 @@
 import { useCart, useCartForm } from "@/lib/cart";
 import { shopifyImageUrl } from "@/lib/image";
 import { interpolate } from "@/lib/content";
-import { formatPrice } from "@/lib/money";
 
 import { useI18n } from "./I18nProvider";
+import { Price } from "./CurrencyProvider";
 
 /**
  * A cart line, derived from the typed `useCart` binding (F3: consume typed data,
@@ -31,7 +31,7 @@ export function CartLineItem({
   line: CartLine;
   onRemoveIntent?: () => void;
 }) {
-  const { content, href, tag } = useI18n();
+  const { content, href } = useI18n();
   const { formProps, register } = useCartForm();
   const pendingLines = useCart((state) => state.pending.lines);
   const isPending = pendingLines.has(line.id);
@@ -88,14 +88,14 @@ export function CartLineItem({
         ) : null}
         <p className="text-on-surface mt-2 text-sm">
           {onSale ? (
-            <span className="text-sale font-medium">{formatPrice(totalAmount, tag)}</span>
+            <span className="text-sale font-medium"><Price money={totalAmount} /></span>
           ) : (
-            formatPrice(totalAmount, tag)
+            <Price money={totalAmount} />
           )}
           {onSale && compareAt ? (
             <>
               {" "}
-              <s className="text-compare text-sm">{formatPrice(compareAt, tag)}</s>
+              <s className="text-compare text-sm"><Price money={compareAt} /></s>
             </>
           ) : null}
         </p>

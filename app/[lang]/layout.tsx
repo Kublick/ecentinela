@@ -5,11 +5,13 @@ import "../globals.css";
 
 import { Suspense } from "react";
 
+import { CurrencyProvider } from "@/components/CurrencyProvider";
 import { I18nProvider } from "@/components/I18nProvider";
 import { ShopifyScriptsWithNavigation } from "@/components/ShopifyScriptsWithNavigation";
 import { getAnalyticsShop } from "@/lib/analytics-shop";
 import { shop } from "@/lib/config";
 import { getContent } from "@/lib/content";
+import { fetchExchangeRates } from "@/lib/exchange-rates";
 import { LOCALE_TAGS, LOCALES } from "@/lib/i18n";
 import { resolveLocale } from "@/lib/locale-params";
 import { getMarket } from "@/lib/markets";
@@ -42,7 +44,7 @@ export function generateStaticParams() {
 export async function generateMetadata({ params }: LayoutProps<"/[lang]">): Promise<Metadata> {
   const locale = await resolveLocale(params);
   const content = getContent(locale);
-  const { shopName } = await getAnalyticsShop();
+  const shopName = "Eléctrica Centinela";
   return {
     metadataBase: new URL(SITE_ORIGIN),
     title: {
@@ -61,7 +63,7 @@ export async function generateMetadata({ params }: LayoutProps<"/[lang]">): Prom
 export default async function RootLayout({ children, params }: LayoutProps<"/[lang]">) {
   const locale = await resolveLocale(params);
   const content = getContent(locale);
-  const { currency } = await getAnalyticsShop();
+  const [{ currency }, rates] = await Promise.all([getAnalyticsShop(), fetchExchangeRates()]);
   return (
     <html lang={LOCALE_TAGS[locale]} className={`${inter.variable} ${plexMono.variable}`}>
       <head>
@@ -69,6 +71,7 @@ export default async function RootLayout({ children, params }: LayoutProps<"/[la
       </head>
       <body className="bg-surface text-on-surface font-body flex min-h-svh flex-col antialiased">
         <I18nProvider locale={locale}>
+          <CurrencyProvider base={currency} rates={rates}>
           <div
             role="region"
             aria-label={content.announcement.label}
@@ -91,6 +94,7 @@ export default async function RootLayout({ children, params }: LayoutProps<"/[la
           >
             <AppShell locale={locale}>{children}</AppShell>
           </Suspense>
+          </CurrencyProvider>
         </I18nProvider>
       </body>
     </html>

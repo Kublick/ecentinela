@@ -239,7 +239,7 @@ export function PriceRangeFilter({
             inputMode="numeric"
             autoComplete="off"
             onChange={submitAfterTyping}
-            className="number-reset rounded-button border-border h-9 w-full border px-2 text-sm"
+            className="number-reset rounded-button border-border h-11 w-full border px-2 text-sm lg:h-9"
           />
         </label>
         <span className="text-on-surface-secondary text-sm">{content.collection.priceTo}</span>
@@ -255,7 +255,7 @@ export function PriceRangeFilter({
             inputMode="numeric"
             autoComplete="off"
             onChange={submitAfterTyping}
-            className="number-reset rounded-button border-border h-9 w-full border px-2 text-sm"
+            className="number-reset rounded-button border-border h-11 w-full border px-2 text-sm lg:h-9"
           />
         </label>
       </div>

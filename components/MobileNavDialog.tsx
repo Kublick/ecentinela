@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 
 import { useI18n } from "./I18nProvider";
+import { CurrencySwitch } from "./CurrencyProvider";
 import { LanguageSwitch } from "./LanguageSwitch";
 
 /**
@@ -35,7 +36,7 @@ export function MobileNavDialog({
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="button-icon focus-visible:outline-accent inline-flex h-11 w-11 cursor-pointer items-center justify-center rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+        className="button-icon focus-visible:outline-focus inline-flex h-11 w-11 cursor-pointer items-center justify-center rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
         aria-label={content.header.menu}
         aria-haspopup="dialog"
         aria-expanded={open}
@@ -68,7 +69,7 @@ export function MobileNavDialog({
             <button
               type="button"
               onClick={() => setOpen(false)}
-              className="button-icon focus-visible:outline-accent ms-auto inline-flex h-11 w-11 items-center justify-center rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+              className="button-icon focus-visible:outline-focus ms-auto inline-flex h-11 w-11 items-center justify-center rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
               aria-label={content.general.close}
             >
               <img
@@ -104,8 +105,9 @@ export function MobileNavDialog({
               >
                 {content.header.allCategories}
               </Link>
-              <div className="mt-2">
+              <div className="mt-2 flex flex-wrap items-center gap-4">
                 <LanguageSwitch />
+                <CurrencySwitch />
               </div>
             </nav>
           </div>

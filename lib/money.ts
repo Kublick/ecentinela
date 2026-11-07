@@ -14,6 +14,15 @@ export function formatPrice(money: MoneyV2, locale = "en-US"): string {
   return `${currencyNarrowSymbol}${amount} ${money.currencyCode}`;
 }
 
+/**
+ * Catalog placeholder prices (0, 9,999 and 99,999) mean "call for a quote":
+ * show "Price on request" and offer a call instead of add-to-cart.
+ */
+export function isPriceOnRequest(money: MoneyV2): boolean {
+  return PRICE_ON_REQUEST.has(Number(money.amount));
+}
+const PRICE_ON_REQUEST = new Set([0, 9999, 99999]);
+
 /** Format a price range from min/max `MoneyV2` values. */
 export function formatPriceRange(min: MoneyV2, max: MoneyV2, locale = "en-US"): string {
   return formatMoney([min, max], { locale }).toString();

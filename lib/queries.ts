@@ -1,6 +1,6 @@
 import { gql, type StorefrontApi } from "@shopify/hydrogen";
 
-import { COLLECTION_CARD_FRAGMENT, PRODUCT_CARD_FRAGMENT, PRODUCT_ROW_FRAGMENT } from "./fragments";
+import { COLLECTION_CARD_FRAGMENT, PRODUCT_ROW_FRAGMENT } from "./fragments";
 
 /** Collections index query (`collections(first: 24)`). */
 export const COLLECTIONS_QUERY = gql(
@@ -93,7 +93,7 @@ export type CollectionAvailableFilter = CollectionProducts["filters"][number];
  */
 export const SEARCH_QUERY = gql(
   `
-  query Search($query: String!, $first: Int!, $after: String, $sortKey: SearchSortKeys, $reverse: Boolean, $productFilters: [ProductFilter!], $country: CountryCode, $language: LanguageCode)
+  query Search($query: String!, $first: Int!, $after: String, $sortKey: SearchSortKeys, $reverse: Boolean, $productFilters: [ProductFilter!], $withInventory: Boolean!, $country: CountryCode, $language: LanguageCode)
   @inContext(country: $country, language: $language) {
     search(query: $query, first: $first, after: $after, sortKey: $sortKey, reverse: $reverse, productFilters: $productFilters) {
       totalCount
@@ -127,13 +127,13 @@ export const SEARCH_QUERY = gql(
       nodes {
         __typename
         ... on Product {
-          ...ProductCard
+          ...ProductRow
         }
       }
     }
   }
 `,
-  [PRODUCT_CARD_FRAGMENT],
+  [PRODUCT_ROW_FRAGMENT],
 );
 
 type SearchQuery = StorefrontApi.ResultOf<typeof SEARCH_QUERY>;

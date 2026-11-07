@@ -10,11 +10,10 @@ import {
 import { CollectionProvider, useCollection, useCollectionForm } from "@shopify/hydrogen/react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState, useSyncExternalStore, type SyntheticEvent } from "react";
 
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { useI18n } from "@/components/I18nProvider";
-import { ProductCard, type ProductCardData } from "@/components/ProductCard";
 import { ProductTable, type ProductRowData } from "@/components/ProductTable";
 import { AnalyticsEvent, getAnalytics } from "@/lib/analytics";
 import { interpolate, type Content } from "@/lib/content";
@@ -93,7 +92,9 @@ export type CollectionBrowserProps =
   | {
       mode: "search";
       term: string;
-      products: ProductCardData[];
+      products: ProductRowData[];
+      /** Show stock counts in the table (needs inventory access). */
+      showStock: boolean;
       availableFilters: SearchAvailableFilter[];
       pageInfo: PageInfo;
       totalCount: number;
@@ -222,7 +223,7 @@ function CollectionPage(props: CollectionPageProps) {
         />
 
         <div key="results" className="flex flex-col gap-4">
-          <div className="flex items-center justify-between gap-4">
+          <div className="flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
             <p className="type-body-sm text-on-surface-secondary" aria-live="polite">
               {showingCount}
             </p>
@@ -294,10 +295,10 @@ function SubcategoryChips({
           href={href(item.href)}
           onClick={onNavigate}
           aria-current={active ? "true" : undefined}
-          className={`inline-flex min-h-9 items-center rounded-full border px-3 text-sm whitespace-nowrap no-underline ${
+          className={`inline-flex min-h-11 items-center rounded-full border px-3 text-sm whitespace-nowrap no-underline md:min-h-9 ${
             active
               ? "bg-primary border-primary text-white"
-              : "text-primary-dark hover:bg-tint border-[#c9cde6] bg-white"
+              : "text-primary-dark hover:bg-tint border-chip bg-white"
           }`}
         >
           {item.label}
@@ -309,7 +310,7 @@ function SubcategoryChips({
   return (
     <nav
       aria-label={content.collection.subcategories}
-      className="border-border mb-6 rounded-lg border bg-[#f9fafb] p-4"
+      className="border-border bg-panel-subtle mb-6 rounded-lg border p-4"
     >
       {/* One scrolling row on phones, wrapped rows from md up. */}
       <ul role="list" className="scrollbar-none flex gap-2 overflow-x-auto md:flex-wrap">
@@ -317,7 +318,7 @@ function SubcategoryChips({
       </ul>
       {items.length > 12 ? (
         <details className="mt-3">
-          <summary className="text-link cursor-pointer text-sm font-semibold">
+          <summary className="text-link inline-flex min-h-11 cursor-pointer items-center text-sm font-semibold md:min-h-6">
             {interpolate(content.collection.allSubcategories, { count: items.length })}
           </summary>
           <ul role="list" className="mt-3 flex flex-wrap gap-2">
@@ -332,14 +333,23 @@ function SubcategoryChips({
 type SearchPageProps = Extract<CollectionBrowserProps, { mode: "search" }>;
 
 function SearchPage(props: SearchPageProps) {
-  const { term, products, availableFilters, pageInfo, totalCount } = props;
+  const { term, products, availableFilters, pageInfo, totalCount, showStock } = props;
+  const filtersDisclosure = useCollapsedOnMobile();
+  // An exact part-number (SKU or handle) match goes first, highlighted.
+  const exact = products.find((product) =>
+    [product.handle, product.selectedOrFirstAvailableVariant?.sku].some(
+      (code) => code?.toLowerCase() === term.toLowerCase(),
+    ),
+  );
+  const rows = exact ? [exact, ...products.filter((product) => product !== exact)] : products;
   const { locale, content, href } = useI18n();
   const state = useCollection();
   const { formProps } = useCollectionForm();
   const router = useRouter();
   const onNavigate = () => router.refresh();
   const isLoading = state.status === "loading";
-  const currencyCode = products[0]?.priceRange.minVariantPrice.currencyCode ?? "USD";
+  const currencyCode =
+    products[0]?.selectedOrFirstAvailableVariant?.price.currencyCode ?? "USD";
 
   return (
     <div className="max-w-page px-margin mx-auto w-full py-8">
@@ -347,14 +357,15 @@ function SearchPage(props: SearchPageProps) {
         <Breadcrumbs locale={locale} items={[{ label: content.search.title }]} />
       </div>
 
-      <h1 className="type-display mb-6">{content.search.title}</h1>
+      <h1 className="text-primary-dark mb-6 text-3xl font-bold">{content.search.title}</h1>
 
-      {/* Search header form — real GET /search so it works without JS (F4). */}
+      {/* Search header form — real GET /search so it works without JS (F4).
+          Phones use the header search box (it keeps the query) instead. */}
       <form
         action={href("/search")}
         method="get"
         role="search"
-        className="mb-8 flex items-center gap-2"
+        className="mb-8 hidden items-center gap-2 md:flex"
       >
         <label htmlFor="search-q" className="sr-only">
           {content.search.label}
@@ -408,11 +419,11 @@ function SearchPage(props: SearchPageProps) {
               reachable without JS (F4). */}
           <details
             key="filters"
-            open
+            {...filtersDisclosure}
             className="lg:flex lg:flex-col lg:gap-6"
             aria-labelledby="search-filters-heading"
           >
-            <summary className="marker-hidden rounded-button button-outline focus-visible:outline-accent min-h-touch-target mb-4 inline-flex cursor-pointer items-center gap-2 px-3 py-1.5 text-sm font-medium focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 lg:hidden">
+            <summary className="marker-hidden rounded-button button-outline focus-visible:outline-focus min-h-touch-target mb-4 inline-flex cursor-pointer items-center gap-2 px-3 py-1.5 text-sm font-medium focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 lg:hidden">
               {content.collection.filters}
             </summary>
             <div className="flex flex-col gap-6 lg:mb-0">
@@ -435,7 +446,7 @@ function SearchPage(props: SearchPageProps) {
           </details>
 
           <div key="results" className="flex flex-col gap-4">
-            <div className="flex items-center justify-between gap-4">
+            <div className="flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
               <p className="type-body-sm text-on-surface-secondary" aria-live="polite">
                 {interpolate(content.search.resultsFor, {
                   count: totalCount,
@@ -448,21 +459,13 @@ function SearchPage(props: SearchPageProps) {
               />
             </div>
 
-            <ul
-              role="list"
-              className="grid grid-cols-2 gap-x-1 gap-y-10 contain-paint lg:grid-cols-3"
-            >
-              {products.map((product, index) => (
-                <li key={product.id} className={isLoading ? "opacity-60" : ""}>
-                  <ProductCard
-                    product={product}
-                    locale={locale}
-                    loading={index < 3 ? "eager" : "lazy"}
-                    fetchPriority={index === 0 ? "high" : "auto"}
-                  />
-                </li>
-              ))}
-            </ul>
+            <ProductTable
+              products={rows}
+              collectionTitle={`\u201c${term}\u201d`}
+              showStock={showStock}
+              isLoading={isLoading}
+              pinnedId={exact?.id}
+            />
 
             {pageInfo.hasNextPage ? (
               <div className="mt-8 text-center">
@@ -507,7 +510,7 @@ function SortSelect({ isLoading, options }: { isLoading: boolean; options: SortO
         value={currentSort}
         onChange={(event) => event.currentTarget.form?.requestSubmit()}
         aria-busy={isLoading}
-        className="w-auto"
+        className="h-11 w-auto md:h-9"
       >
         {options.map((option) => (
           <option key={option.label} value={option.value}>
@@ -531,6 +534,7 @@ function FilterSidebar({
   currencyCode: string;
 }) {
   const { content } = useI18n();
+  const filtersDisclosure = useCollapsedOnMobile();
   if (availableFilters.length === 0) return null;
 
   const filterGroups = availableFilters.map((filter) => (
@@ -550,11 +554,11 @@ function FilterSidebar({
        groups as a static sidebar; on mobile the `<summary>` is visible and the
        disclosure is collapsible — reachable WITHOUT JS (F4). */
     <details
-      open
+      {...filtersDisclosure}
       className="lg:flex lg:flex-col lg:gap-6"
       aria-labelledby="collection-filters-heading"
     >
-      <summary className="marker-hidden rounded-button button-outline focus-visible:outline-accent min-h-touch-target mb-4 inline-flex cursor-pointer items-center gap-2 px-3 py-1.5 text-sm font-medium focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 lg:hidden">
+      <summary className="marker-hidden rounded-button button-outline focus-visible:outline-focus min-h-touch-target mb-4 inline-flex cursor-pointer items-center gap-2 px-3 py-1.5 text-sm font-medium focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 lg:hidden">
         <span aria-hidden="true"> {/* filter icon placeholder */} </span>
         {content.collection.filters}
       </summary>
@@ -566,6 +570,35 @@ function FilterSidebar({
       </div>
     </details>
   );
+}
+
+/**
+ * Filters render open (a static sidebar from lg up, and usable without JS);
+ * below lg they fold on mount so the table is the first thing on a phone.
+ */
+function useCollapsedOnMobile() {
+  const isDesktop = useSyncExternalStore(
+    subscribeDesktop,
+    () => window.matchMedia(DESKTOP_QUERY).matches,
+    () => true,
+  );
+  // null until the buyer opens or closes the filters themselves.
+  const [chosen, setChosen] = useState<boolean | null>(null);
+  const open = chosen ?? isDesktop;
+  return {
+    open,
+    onToggle: (event: SyntheticEvent<HTMLDetailsElement>) => {
+      if (event.currentTarget.open !== open) setChosen(event.currentTarget.open);
+    },
+  };
+}
+
+const DESKTOP_QUERY = "(min-width: 64rem)";
+
+function subscribeDesktop(onChange: () => void) {
+  const query = window.matchMedia(DESKTOP_QUERY);
+  query.addEventListener("change", onChange);
+  return () => query.removeEventListener("change", onChange);
 }
 
 function ActiveFilterChips({
@@ -691,7 +724,7 @@ function Pagination({
     return `${basePath}?${params.toString()}`;
   };
   const linkClassName =
-    "rounded-button button-outline focus-visible:outline-accent inline-flex h-11 items-center justify-center px-5 text-sm font-medium no-underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2";
+    "rounded-button button-outline focus-visible:outline-focus inline-flex h-11 items-center justify-center px-5 text-sm font-medium no-underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2";
 
   return (
     <nav className="mt-8 flex items-center justify-center gap-3">

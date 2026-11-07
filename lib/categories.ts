@@ -61,7 +61,8 @@ export function subcategories(handle: string): { label: string; href: string }[]
       label: tags[0].replace(/\s+/g, " "),
       href: `/collections/${handle}?${new URLSearchParams(tags.map((tag) => ["filter.p.tag", tag]))}`,
     }))
-    .sort((a, b) => a.label.localeCompare(b.label, "es"));
+    // Numeric collation so "5-10 HP" sorts before "125-150 HP".
+    .sort((a, b) => a.label.localeCompare(b.label, "es", { numeric: true }));
 }
 
 export { categories };
