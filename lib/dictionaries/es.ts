@@ -6,6 +6,18 @@
  * Placeholders use `{{ name }}` and are filled with `interpolate()` from
  * `lib/content.ts`.
  */
+// Shopify sends filter labels in the store's default language (English); these
+// show them in Spanish until Spanish is published in Shopify → Languages.
+const SHOPIFY_LABELS: Record<string, string> = {
+  Availability: "Disponibilidad",
+  "In stock": "En existencia",
+  "Out of stock": "Agotado",
+  Price: "Precio",
+  "Product type": "Tipo de producto",
+  Vendor: "Marca",
+  Brand: "Marca",
+};
+
 export const es = {
   announcement: {
     label: "Aviso",
@@ -196,6 +208,7 @@ export const es = {
     price: "Precio",
     inStock: "En existencia",
     outOfStock: "Agotado",
+    shopifyLabels: SHOPIFY_LABELS,
     loadMore: "Siguiente página",
     previousPage: "Página anterior",
     subcategories: "Subcategorías",
@@ -286,7 +299,6 @@ export const es = {
     searchHeading: "Material eléctrico industrial en Mexicali",
     searchIntro:
       "Más de 5,600 números de parte de Bussmann, Eaton, ABB, Siemens, Finder, Weidmüller y más. Precios en dólares (USD) con IVA incluido.",
-    searchPlaceholder: "Número de parte, marca o descripción",
     categories: "Categorías",
     viewAll: "Ver todo",
     brands: "Marcas",

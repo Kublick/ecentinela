@@ -56,30 +56,6 @@ export default async function HomePage({ params }: PageProps<"/[lang]">) {
           <p className="text-on-surface-secondary max-w-2xl text-base">
             {content.home.searchIntro}
           </p>
-          <form
-            action={localizePath(locale, "/search")}
-            method="get"
-            role="search"
-            className="mt-1 flex max-w-3xl"
-          >
-            <label htmlFor="home-search-q" className="sr-only">
-              {content.general.search}
-            </label>
-            <input
-              id="home-search-q"
-              name="q"
-              type="search"
-              autoComplete="off"
-              placeholder={content.home.searchPlaceholder}
-              className="border-primary h-13 rounded-e-none border-[1.5px] border-e-0 text-base"
-            />
-            <button
-              type="submit"
-              className="bg-primary hover:bg-primary-dark h-13 shrink-0 rounded-e-[var(--radius-input)] px-6 text-base font-semibold text-white"
-            >
-              {content.general.search}
-            </button>
-          </form>
         </div>
       </section>
 

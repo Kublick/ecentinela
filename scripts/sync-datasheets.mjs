@@ -79,6 +79,18 @@ async function hasOldPdf(handle) {
   return false;
 }
 
+// 0. Fail early, before any work, if the token can't do what --apply needs.
+const { currentAppInstallation } = await admin(`{ currentAppInstallation { accessScopes { handle } } }`);
+const scopes = currentAppInstallation.accessScopes.map((scope) => scope.handle);
+console.log(`Token scopes: ${scopes.join(", ")}`);
+const needed = ["write_products", "write_files"].filter((scope) => !scopes.includes(scope));
+if (apply && needed.length > 0) {
+  console.error(
+    `Missing scopes: ${needed.join(", ")}. Add them to the app, release/reinstall it, and use a new token.`,
+  );
+  process.exit(1);
+}
+
 // 1. The metafield must be a file reference the storefront can read.
 const { metafieldDefinitions } = await admin(`{
   metafieldDefinitions(first: 1, ownerType: PRODUCT, namespace: "custom", key: "datasheet") {

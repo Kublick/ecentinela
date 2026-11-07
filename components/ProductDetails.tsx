@@ -22,6 +22,7 @@ import type { ProductData } from "@/lib/product-query";
 
 import { useI18n } from "./I18nProvider";
 import { ConvertedPriceNote, Price } from "./CurrencyProvider";
+import { DatasheetIcon } from "./DatasheetIcon";
 
 // Next.js keys the `[handle]` segment by its value, so a combined-listing switch
 // unmounts this whole component and the focused link with it. Module state
@@ -322,20 +323,9 @@ function ProductPage({ product }: { product: ProductData }) {
               href={datasheetUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="rounded-button bg-tint text-primary-dark inline-flex h-11 items-center gap-2 self-start px-4 font-bold no-underline hover:underline"
+              className="text-link inline-flex min-h-11 items-center gap-2 self-start font-semibold"
             >
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.8"
-                strokeLinejoin="round"
-                className="size-5"
-                aria-hidden="true"
-              >
-                <path d="M6 3h8l4 4v14H6z" />
-                <path d="M14 3v4h4" />
-              </svg>
+              <DatasheetIcon />
               {content.product.datasheet}
             </a>
           ) : null}

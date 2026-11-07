@@ -13,6 +13,7 @@ import { isPriceOnRequest } from "@/lib/money";
 
 import { useI18n } from "./I18nProvider";
 import { Price } from "./CurrencyProvider";
+import { DatasheetIcon } from "./DatasheetIcon";
 
 /** A collection table row (`PRODUCT_ROW_FRAGMENT`). */
 export type ProductRowData = NonNullable<
@@ -377,10 +378,11 @@ function ProductTableRow({
             href={datasheetUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-link text-sm"
+            className="text-link inline-flex size-9 items-center justify-center rounded hover:bg-tint"
             aria-label={interpolate(copy.datasheetLink, { part: partNumber })}
+            title={interpolate(copy.datasheetLink, { part: partNumber })}
           >
-            PDF
+            <DatasheetIcon />
           </a>
         ) : (
           <span className="text-on-surface-secondary" aria-hidden="true">
@@ -522,7 +524,13 @@ function ProductListItem({
           {datasheetUrl ? (
             <>
               {" · "}
-              <a href={datasheetUrl} target="_blank" rel="noopener noreferrer" className="text-link">
+              <a
+                href={datasheetUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-link inline-flex items-center gap-1 align-bottom"
+              >
+                <DatasheetIcon className="size-4" />
                 {copy.datasheet}
               </a>
             </>

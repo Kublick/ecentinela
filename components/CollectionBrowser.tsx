@@ -1,7 +1,6 @@
 "use client";
 
 import {
-  createPredictiveSearchFormRegister,
   getFilterRemovalUrl,
   getSortByValue,
   serializeCollectionParams,
@@ -58,8 +57,6 @@ function searchSortOptions(labels: SortLabels) {
     { label: labels.priceDesc, value: getSortByValue("PRICE", true) },
   ];
 }
-
-const registerSearchField = createPredictiveSearchFormRegister();
 
 type PageInfo = {
   hasNextPage: boolean;
@@ -359,40 +356,6 @@ function SearchPage(props: SearchPageProps) {
 
       <h1 className="text-primary-dark mb-6 text-3xl font-bold">{content.search.title}</h1>
 
-      {/* Search header form — real GET /search so it works without JS (F4).
-          Phones use the header search box (it keeps the query) instead. */}
-      <form
-        action={href("/search")}
-        method="get"
-        role="search"
-        className="mb-8 hidden items-center gap-2 md:flex"
-      >
-        <label htmlFor="search-q" className="sr-only">
-          {content.search.label}
-        </label>
-        <input
-          {...registerSearchField("query")}
-          id="search-q"
-          defaultValue={term}
-          key={term}
-          placeholder={content.search.placeholder}
-          className="number-reset rounded-button border-border h-11 max-w-md border px-3 text-sm"
-        />
-        <button
-          type="submit"
-          className="rounded-button button-primary inline-flex h-11 items-center justify-center px-4 text-sm font-medium"
-        >
-          {content.search.submit}
-        </button>
-        {term ? (
-          <Link
-            href={href("/search")}
-            className="text-on-surface-secondary hover:text-on-surface inline-flex min-h-11 items-center text-sm no-underline"
-          >
-            {content.search.clear}
-          </Link>
-        ) : null}
-      </form>
 
       {!term ? null : products.length === 0 ? (
         <div className="py-12 text-center">
