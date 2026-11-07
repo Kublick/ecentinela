@@ -144,6 +144,8 @@ export const en: Content = {
     soldOut: "Out of stock",
     description: "Description",
     relatedProducts: "Related products",
+    relatedPrevious: "Previous related products",
+    relatedNext: "More related products",
     fallbackTitle: "Product",
     alternateImage: "{{ title }}, alternate image",
     price: "Price: ",
