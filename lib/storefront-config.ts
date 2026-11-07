@@ -92,7 +92,7 @@ export function resolveStorefrontConfig(): ResolvedStorefrontConfig {
  * Whether the Storefront API token can read stock levels
  * (`unauthenticated_read_product_inventory`). Enable it in the Hydrogen channel
  * storefront settings, then set `STOREFRONT_INVENTORY_ACCESS=true` so the
- * collection table shows "N en existencia". Without the scope, requesting
+ * collection table and product page show "N en existencia". Without the scope, requesting
  * `quantityAvailable` fails, so it stays off by default.
  */
 export function hasInventoryAccess(): boolean {

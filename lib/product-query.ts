@@ -7,10 +7,11 @@ import { PRODUCT_CARD_FRAGMENT, VARIANT_FIELDS_FRAGMENT } from "./fragments";
  * `hydrogen-variant-form`). Derives URL-selected options with
  * `getSelectedProductOptions`, includes the variant-form encoded fields, and
  * uses one reusable `VariantFields` fragment across all variant caches.
+ * `$withInventory` adds `quantityAvailable` (see `hasInventoryAccess`).
  */
 export const PRODUCT_QUERY = gql(
   `
-  query Product($handle: String!, $selectedOptions: [SelectedOptionInput!]!, $country: CountryCode, $language: LanguageCode)
+  query Product($handle: String!, $selectedOptions: [SelectedOptionInput!]!, $withInventory: Boolean!, $country: CountryCode, $language: LanguageCode)
   @inContext(country: $country, language: $language) {
     product(handle: $handle) {
       id

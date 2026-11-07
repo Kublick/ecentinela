@@ -251,6 +251,8 @@ export const en: Content = {
     viewAll: "View all results",
     searching: "Searching…",
     products: "Products",
+    categories: "Categories",
+    suggestions: "Suggestions",
   },
   home: {
     hero: {
