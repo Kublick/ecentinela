@@ -46,7 +46,7 @@ export function Header({ locale, accountLink }: { locale: Locale; accountLink?: 
               categories={nav.map(({ title, href }) => ({ title, href }))}
               allHref={localizePath(locale, "/collections")}
             />
-            <Link href={localizePath(locale, "/")} className="inline-flex shrink-0">
+            <Link href={localizePath(locale, "/")} className="inline-flex min-h-11 shrink-0 items-center">
               <img
                 src="/brand/logo-centinela-white.svg"
                 alt="Eléctrica Centinela"

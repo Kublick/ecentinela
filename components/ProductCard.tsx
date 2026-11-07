@@ -55,6 +55,8 @@ export function ProductCard({
               src={shopifyImageUrl(primaryImage.url, { width: 600 })}
               srcSet={srcSetFor(primaryImage.url, { width: 600 })}
               alt={primaryImage.altText ?? product.title}
+              width={600}
+              height={600}
               className="h-full w-full bg-white object-contain p-2"
               loading={loading}
               {...(fetchPriority !== "auto" ? { fetchPriority: fetchPriority } : {})}
@@ -69,6 +71,8 @@ export function ProductCard({
               src={shopifyImageUrl(secondaryImage.url, { width: 600 })}
               srcSet={srcSetFor(secondaryImage.url, { width: 600 })}
               alt=""
+              width={600}
+              height={600}
               className="h-full w-full bg-white object-contain p-2"
               loading="lazy"
             />
