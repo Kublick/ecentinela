@@ -148,9 +148,13 @@ function ProductPage({ product }: { product: ProductData }) {
                     : "text-on-surface-secondary bg-[#f1f2f5]"
                 }`}
               >
-                {selectedVariant.availableForSale
-                  ? content.product.inventory.inStock
-                  : content.product.soldOut}
+                {!selectedVariant.availableForSale
+                  ? content.product.soldOut
+                  : selectedVariant.quantityAvailable && selectedVariant.quantityAvailable > 0
+                    ? interpolate(content.collection.table.stockCount, {
+                        count: selectedVariant.quantityAvailable,
+                      })
+                    : content.product.inventory.inStock}
               </span>
             ) : null}
           </div>

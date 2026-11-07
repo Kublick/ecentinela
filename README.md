@@ -28,7 +28,7 @@ Server-only:
 - `PRIVATE_STOREFRONT_API_TOKEN`: private Storefront API token.
 - `SESSION_SECRET`: random secret, at least 32 characters. Generate one with `node -e "console.log(crypto.randomBytes(32).toString('base64url'))"`.
 - `SITE_ORIGIN`: public origin of the site, e.g. `https://shop.e-centinela.com`.
-- `STOREFRONT_INVENTORY_ACCESS`: `true` once the storefront token has the `unauthenticated_read_product_inventory` scope (Hydrogen channel → storefront → Storefront API permissions). Turns on the "N en existencia" stock counts in the collection table. Defaults to off, because requesting stock without the scope fails.
+- `STOREFRONT_INVENTORY_ACCESS`: `true` once the storefront token has the `unauthenticated_read_product_inventory` scope (Hydrogen channel → storefront → Storefront API permissions). Turns on the "N en existencia" stock counts in the collection table and on the product page. Defaults to off, because requesting stock without the scope fails.
 - `ALLOW_INDEXING`: `true` only on the live domain. Anything else sends `noindex` (meta tag and `X-Robots-Tag` header) and a `robots.txt` that disallows everything, so sandbox and preview deployments don't show up in search results next to e-centinela.com. Read at build time, so in Coolify it must be a build variable.
 
 Public (inlined into the browser bundle at build time):

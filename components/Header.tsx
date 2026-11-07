@@ -6,12 +6,14 @@ import { getContent, interpolate } from "@/lib/content";
 import { localizePath, type Locale } from "@/lib/i18n";
 
 import { CartTrigger } from "./CartTrigger";
+import { HeaderSearch } from "./HeaderSearch";
 import { LanguageSwitch, LanguageSwitchFallback } from "./LanguageSwitch";
 import { MobileNavDialog } from "./MobileNavDialog";
 
 /**
  * Site header, styled after e-centinela.com: a navy band with the logo, a
- * visible part-number search (a plain GET form to `/search`), account and cart,
+ * visible part-number search (`HeaderSearch`: a GET form to `/search` with a
+ * predictive dropdown), account and cart,
  * then a darker band with the "Categorías" menu, the phone number and the
  * language switch.
  *
@@ -50,42 +52,12 @@ export function Header({ locale, accountLink }: { locale: Locale; accountLink?: 
             </Link>
           </div>
 
-          <form
-            action={localizePath(locale, "/search")}
-            method="get"
-            role="search"
-            className="order-last flex w-full min-w-0 md:order-none md:w-auto md:flex-1"
-          >
-            <label htmlFor="header-search-q" className="sr-only">
-              {content.general.search}
-            </label>
-            <input
-              id="header-search-q"
-              name="q"
-              type="search"
-              autoComplete="off"
-              placeholder={content.header.searchPlaceholder}
-              className="h-11 rounded-e-none border-0 text-base"
-            />
-            <button
-              type="submit"
-              aria-label={content.general.search}
-              className="bg-lime text-primary-dark inline-flex h-11 w-14 shrink-0 items-center justify-center rounded-e-[var(--radius-input)] hover:brightness-95"
-            >
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2.2"
-                strokeLinecap="round"
-                className="size-5"
-                aria-hidden="true"
-              >
-                <circle cx="11" cy="11" r="7" />
-                <path d="M20 20l-3.5-3.5" />
-              </svg>
-            </button>
-          </form>
+          <HeaderSearch
+            categories={nav.flatMap((category) => [
+              { label: category.title, href: category.href },
+              ...category.subcategories,
+            ])}
+          />
 
           <div className="ms-auto flex items-center gap-2 md:ms-0">
             {accountLink}
