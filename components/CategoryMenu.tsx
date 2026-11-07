@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useId, useRef, useState, type KeyboardEvent } from "react";
 
 import { interpolate } from "@/lib/content";
@@ -23,16 +24,36 @@ export function CategoryMenu({ categories }: { categories: Category[] }) {
   const buttonRef = useRef<HTMLButtonElement>(null);
   const itemRefs = useRef<(HTMLAnchorElement | null)[]>([]);
   const closeTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  // How the menu was opened: a click on the button after a hover-open keeps it
+  // open instead of toggling it shut.
+  const openedBy = useRef<"hover" | "click">("click");
+  // After picking a link the pointer is still over the menu; don't reopen on
+  // hover until it has left.
+  const hoverLocked = useRef(false);
   const current = categories[active];
 
-  function show() {
+  // Close whenever the page changes (back/forward, links outside the menu).
+  const pathname = usePathname();
+  const [lastPath, setLastPath] = useState(pathname);
+  if (pathname !== lastPath) {
+    setLastPath(pathname);
+    setOpen(false);
+  }
+
+  function show(by: "hover" | "click") {
     clearTimeout(closeTimer.current);
+    if (!open) openedBy.current = by;
     setOpen(true);
   }
   function close(returnFocus = false) {
     clearTimeout(closeTimer.current);
     setOpen(false);
     if (returnFocus) buttonRef.current?.focus();
+  }
+  function pick() {
+    close();
+    hoverLocked.current = true;
+    if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
   }
   function focusItem(index: number) {
     const next = (index + categories.length) % categories.length;
@@ -54,8 +75,11 @@ export function CategoryMenu({ categories }: { categories: Category[] }) {
 
   return (
     <div
-      onMouseEnter={show}
+      onMouseEnter={() => {
+        if (!hoverLocked.current) show("hover");
+      }}
       onMouseLeave={() => {
+        hoverLocked.current = false;
         closeTimer.current = setTimeout(() => setOpen(false), 150);
       }}
       onKeyDown={(event) => {
@@ -70,11 +94,16 @@ export function CategoryMenu({ categories }: { categories: Category[] }) {
         type="button"
         aria-expanded={open}
         aria-controls={panelId}
-        onClick={() => (open ? close() : show())}
+        onClick={() => {
+          hoverLocked.current = false;
+          if (open && openedBy.current === "click") close();
+          else show("click");
+          openedBy.current = "click";
+        }}
         onKeyDown={(event) => {
           if (event.key !== "ArrowDown") return;
           event.preventDefault();
-          show();
+          show("click");
           requestAnimationFrame(() => focusItem(active));
         }}
         className="bg-secondary inline-flex h-12 cursor-pointer items-center gap-2 px-4 font-semibold text-white focus-visible:outline-2 focus-visible:-outline-offset-4 focus-visible:outline-white"
@@ -113,7 +142,7 @@ export function CategoryMenu({ categories }: { categories: Category[] }) {
                 tabIndex={index === active ? 0 : -1}
                 onMouseEnter={() => setActive(index)}
                 onFocus={() => setActive(index)}
-                onClick={() => close()}
+                onClick={pick}
                 className={`block px-5 py-1.5 text-sm no-underline ${
                   index === active
                     ? "text-primary-dark bg-white font-semibold shadow-[inset_3px_0_0_var(--color-secondary)]"
@@ -132,7 +161,7 @@ export function CategoryMenu({ categories }: { categories: Category[] }) {
               <span className="text-primary-dark text-lg font-bold">{current.title}</span>
               <Link
                 href={current.href}
-                onClick={() => close()}
+                onClick={pick}
                 className="text-link text-sm font-semibold"
               >
                 {interpolate(content.header.viewCategory, { title: current.title })} →
@@ -143,7 +172,7 @@ export function CategoryMenu({ categories }: { categories: Category[] }) {
                 <li key={sub.href} className="break-inside-avoid">
                   <Link
                     href={sub.href}
-                    onClick={() => close()}
+                    onClick={pick}
                     className="text-on-surface block py-1 no-underline hover:underline"
                   >
                     {sub.label}

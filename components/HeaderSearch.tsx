@@ -8,7 +8,8 @@ import {
   usePredictiveSearchForm,
 } from "@shopify/hydrogen/react";
 import Link from "next/link";
-import { useState, type ReactNode } from "react";
+import { usePathname } from "next/navigation";
+import { useEffect, useState, type ReactNode } from "react";
 
 import { matchCategories, type Category } from "@/lib/category-search";
 import { interpolate } from "@/lib/content";
@@ -44,6 +45,16 @@ function HeaderSearchInner({ categories }: { categories: Category[] }) {
   const { term, items } = state.result;
   const matchedCategories = matchCategories(categories, state.term);
   const showResults = open && state.term !== "";
+  const pathname = usePathname();
+
+  // This is the only search box, so on a results page it shows what was searched.
+  // Read from the URL after load (useSearchParams would need a Suspense fallback).
+  useEffect(() => {
+    const q = new URLSearchParams(window.location.search).get("q");
+    // By id, not a ref: the input's props come from Hydrogen's register().
+    const input = document.getElementById("header-search-q");
+    if (input instanceof HTMLInputElement && q && !input.value) input.value = q;
+  }, [pathname]);
 
   function close() {
     setOpen(false);

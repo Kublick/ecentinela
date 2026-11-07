@@ -191,6 +191,7 @@ export const en: Content = {
     price: "Price",
     inStock: "In stock",
     outOfStock: "Out of stock",
+    shopifyLabels: {},
     loadMore: "Next page",
     previousPage: "Previous page",
     subcategories: "Subcategories",
@@ -281,7 +282,6 @@ export const en: Content = {
     searchHeading: "Industrial electrical supplies in Mexicali",
     searchIntro:
       "More than 5,600 part numbers from Bussmann, Eaton, ABB, Siemens, Finder, Weidmüller and more. Prices in US dollars (USD), VAT (IVA) included.",
-    searchPlaceholder: "Part number, brand or description",
     categories: "Categories",
     viewAll: "View all",
     brands: "Brands",

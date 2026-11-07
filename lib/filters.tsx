@@ -72,6 +72,7 @@ export function FilterValueInput({
   activeFilters: ProductFilter[];
   isLoading?: boolean;
 }) {
+  const { content } = useI18n();
   const entries = filterValueInputParamEntries(value.input);
   if (entries.length !== 1) return null;
 
@@ -101,7 +102,7 @@ export function FilterValueInput({
         autoComplete="off"
       />
       {isSwatch ? <FilterValueSwatch value={value} /> : null}
-      <span className="text-on-surface">{value.label}</span>
+      <span className="text-on-surface">{shopifyLabel(value.label, content)}</span>
       {value.count > 0 ? (
         <span className="text-on-surface-secondary text-xs">({value.count})</span>
       ) : null}
@@ -224,7 +225,7 @@ export function PriceRangeFilter({
   return (
     <fieldset className="flex flex-col gap-2" aria-busy={isLoading}>
       <legend className="type-body-sm text-on-surface mb-1 font-medium">
-        {filter.label} ({currency})
+        {shopifyLabel(filter.label, content)} ({currency})
       </legend>
       <div className="flex items-center gap-2">
         <label className="flex flex-1 items-center gap-1 text-sm">
@@ -263,6 +264,11 @@ export function PriceRangeFilter({
   );
 }
 
+/** Shopify's English filter label in the page language when the dictionary has it. */
+function shopifyLabel(label: string, content: ReturnType<typeof useI18n>["content"]): string {
+  return content.collection.shopifyLabels[label] ?? label;
+}
+
 /** A filter group: renders a PRICE_RANGE or a list of checkbox values. */
 export function FilterGroup({
   filter,
@@ -275,6 +281,7 @@ export function FilterGroup({
   isLoading?: boolean;
   currencyCode?: string;
 }) {
+  const { content } = useI18n();
   if (filter.type === "PRICE_RANGE") {
     return (
       <PriceRangeFilter
@@ -287,7 +294,9 @@ export function FilterGroup({
   }
   return (
     <fieldset className="flex flex-col gap-2" aria-busy={isLoading}>
-      <legend className="type-body-sm text-on-surface mb-1 font-medium">{filter.label}</legend>
+      <legend className="type-body-sm text-on-surface mb-1 font-medium">
+        {shopifyLabel(filter.label, content)}
+      </legend>
       {filter.values.map((value) => (
         <FilterValueInput
           key={value.id}
