@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useState, type FormEvent } from "react";
+import { useId, useRef, useState, type FormEvent } from "react";
 
 import { addLinesToCart, useCart } from "@/lib/cart";
 import { openCartDrawer } from "@/lib/cart-drawer";
@@ -8,12 +8,13 @@ import { interpolate, plural } from "@/lib/content";
 import { lookUpPartNumbers } from "@/lib/quick-order-lookup";
 
 import { useI18n } from "./I18nProvider";
+import { PartNumberInput } from "./PartNumberInput";
 
-type Row = { key: number; code: string; quantity: string; error?: string };
+/** `title` is the product picked from the suggestions, shown as confirmation. */
+type Row = { key: number; code: string; quantity: string; title?: string; error?: string };
 
 const INITIAL_ROWS = 10;
-let nextKey = 0;
-const emptyRow = (): Row => ({ key: nextKey++, code: "", quantity: "1" });
+const emptyRow = (key: number): Row => ({ key, code: "", quantity: "1" });
 
 /**
  * Quick order (live site's /pages/quick-order): type part numbers and
@@ -25,7 +26,11 @@ export function QuickOrderForm() {
   const { locale, content } = useI18n();
   const copy = content.quickOrder;
   const statusId = useId();
-  const [rows, setRows] = useState<Row[]>(() => Array.from({ length: INITIAL_ROWS }, emptyRow));
+  const [rows, setRows] = useState<Row[]>(() =>
+    Array.from({ length: INITIAL_ROWS }, (_, index) => emptyRow(index)),
+  );
+  // Keys after the first rows; per form (not module-wide) so server and client HTML match.
+  const nextKey = useRef(INITIAL_ROWS);
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState<{ error: boolean; message: string } | null>(null);
   const loading = useCart((state) => state.loading);
@@ -91,7 +96,8 @@ export function QuickOrderForm() {
         if (errors.has(row.key)) return [{ ...row, error: errors.get(row.key) }];
         return added && filled.includes(row) ? [] : [row];
       });
-      return [...next, ...Array.from({ length: Math.max(0, INITIAL_ROWS - next.length) }, emptyRow)];
+      const padding = Math.max(0, INITIAL_ROWS - next.length);
+      return [...next, ...Array.from({ length: padding }, () => emptyRow(nextKey.current++))];
     });
 
     const messages = [
@@ -115,23 +121,27 @@ export function QuickOrderForm() {
       <ol className="grid gap-3">
         {rows.map((row, index) => {
           const errorId = `${statusId}-row-${row.key}`;
+          const quantityId = `${statusId}-quantity-${row.key}`;
           const values = { row: index + 1 };
           return (
             <li key={row.key} className="grid grid-cols-[2rem_1fr_6rem] items-start gap-3 sm:grid-cols-[2rem_1fr_8rem]">
               <span className="text-on-surface-secondary pt-3 text-sm tabular-nums">{index + 1}</span>
               <div className="grid gap-1">
-                <input
-                  type="text"
+                <PartNumberInput
                   value={row.code}
-                  onChange={(event) => update(row.key, { code: event.target.value })}
+                  onType={(code) => update(row.key, { code, title: undefined })}
+                  onPick={(code, title) => {
+                    update(row.key, { code, title });
+                    document.getElementById(quantityId)?.focus();
+                  }}
                   aria-label={interpolate(copy.partNumberRow, values)}
                   aria-invalid={row.error ? true : undefined}
                   aria-describedby={row.error ? errorId : undefined}
-                  autoComplete="off"
-                  autoCapitalize="characters"
-                  spellCheck={false}
                   className="border-border bg-surface aria-invalid:border-sale h-11 w-full rounded border px-3 uppercase"
                 />
+                {row.title && !row.error ? (
+                  <p className="text-on-surface-secondary line-clamp-2 text-xs">{row.title}</p>
+                ) : null}
                 {row.error ? (
                   <p id={errorId} className="text-sale text-sm">
                     {row.error}
@@ -139,6 +149,7 @@ export function QuickOrderForm() {
                 ) : null}
               </div>
               <input
+                id={quantityId}
                 type="number"
                 inputMode="numeric"
                 min={1}
@@ -154,7 +165,7 @@ export function QuickOrderForm() {
       <div className="flex flex-wrap items-center gap-3">
         <button
           type="button"
-          onClick={() => setRows((current) => [...current, emptyRow()])}
+          onClick={() => setRows((current) => [...current, emptyRow(nextKey.current++)])}
           className="rounded-button border-border inline-flex h-11 items-center justify-center border px-5 text-sm font-semibold hover:bg-surface-secondary"
         >
           {copy.addRow}

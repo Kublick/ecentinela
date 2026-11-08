@@ -64,6 +64,7 @@ export const en: Content = {
     partNumberRow: "Part number, row {{ row }}",
     quantityRow: "Quantity, row {{ row }}",
     addRow: "Add row",
+    suggestions: "Suggested products",
     submit: "Add to cart",
     adding: "Adding…",
     notFound: "We couldn't find this part number.",

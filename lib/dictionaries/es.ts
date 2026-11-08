@@ -81,6 +81,7 @@ export const es = {
     partNumberRow: "Código de producto, fila {{ row }}",
     quantityRow: "Cantidad, fila {{ row }}",
     addRow: "Agregar fila",
+    suggestions: "Productos sugeridos",
     submit: "Agregar al carrito",
     adding: "Agregando…",
     notFound: "No encontramos este código.",
