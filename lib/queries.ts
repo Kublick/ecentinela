@@ -176,3 +176,45 @@ export const SITEMAP_QUERY = gql(`
     }
   }
 `);
+
+/** Online Store page (`/pages/<handle>`): about us, terms, privacy. */
+export const PAGE_QUERY = gql(`
+  query Page($handle: String!, $country: CountryCode, $language: LanguageCode)
+  @inContext(country: $country, language: $language) {
+    page(handle: $handle) {
+      handle
+      title
+      body
+      seo {
+        title
+        description
+      }
+    }
+  }
+`);
+
+/** Shop policies (`/policies/<handle>`), matched by `handle`. */
+export const POLICIES_QUERY = gql(`
+  fragment Policy on ShopPolicy {
+    handle
+    title
+    body
+  }
+  query Policies($country: CountryCode, $language: LanguageCode)
+  @inContext(country: $country, language: $language) {
+    shop {
+      privacyPolicy {
+        ...Policy
+      }
+      termsOfService {
+        ...Policy
+      }
+      refundPolicy {
+        ...Policy
+      }
+      shippingPolicy {
+        ...Policy
+      }
+    }
+  }
+`);
