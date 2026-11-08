@@ -14,8 +14,8 @@ export function Footer({ locale }: { locale: Locale }) {
   const content = getContent(locale);
   return (
     <footer className="border-primary border-t-[6px] text-sm">
-      <div className="max-w-page px-margin mx-auto grid grid-cols-1 gap-8 py-10 md:grid-cols-2 lg:grid-cols-4">
-        <div className="text-on-surface-secondary flex flex-col gap-3 leading-relaxed lg:col-span-2">
+      <div className="max-w-page px-margin mx-auto grid grid-cols-1 gap-8 py-10 md:grid-cols-3 lg:grid-cols-5">
+        <div className="text-on-surface-secondary flex flex-col gap-3 leading-relaxed md:col-span-3 lg:col-span-2">
           <img
             src="/brand/logo-centinela.png"
             alt="Eléctrica Centinela"
@@ -49,6 +49,11 @@ export function Footer({ locale }: { locale: Locale }) {
                 {content.footer.search}
               </Link>
             </li>
+            <li>
+              <a href={content.footer.catalogHref} rel="nofollow" className={footerLinkClass}>
+                {content.footer.catalog}
+              </a>
+            </li>
           </ul>
         </nav>
         <nav aria-labelledby="footer-customer-care-heading">
@@ -66,6 +71,20 @@ export function Footer({ locale }: { locale: Locale }) {
                 {content.footer.account}
               </Link>
             </li>
+          </ul>
+        </nav>
+        <nav aria-labelledby="footer-information-heading">
+          <h2 className="text-primary-dark mb-2 font-bold" id="footer-information-heading">
+            {content.footer.information}
+          </h2>
+          <ul role="list" className="flex flex-col">
+            {content.footer.infoLinks.map((link) => (
+              <li key={link.href}>
+                <Link href={localizePath(locale, link.href)} className={footerLinkClass}>
+                  {link.label}
+                </Link>
+              </li>
+            ))}
           </ul>
         </nav>
       </div>
