@@ -104,23 +104,30 @@ function ProductPage({ product }: { product: ProductData }) {
       <div className="product-grid mb-16 grid grid-cols-1 gap-6 md:gap-12">
         {/* Gallery */}
         <div className="grid grid-cols-2 gap-2 self-start">
-          {images.map((image, index) => (
-            <div
-              key={image.url}
-              className={`border-border aspect-square overflow-hidden rounded-lg border bg-white p-4 ${index === 0 ? "col-span-2" : ""}`}
-            >
-              <img
-                src={shopifyImageUrl(image.url, { width: index === 0 ? 800 : 400 })}
-                srcSet={srcSetFor(image.url, { width: index === 0 ? 800 : 400 })}
-                alt={image.altText ?? product.title}
-                width={index === 0 ? 800 : 400}
-                height={index === 0 ? 800 : 400}
-                className="h-full w-full object-contain"
-                loading={index === 0 ? "eager" : "lazy"}
-                {...(index === 0 ? { fetchPriority: "high" } : {})}
-              />
-            </div>
-          ))}
+          {images.map((image, index) => {
+            const target = index === 0 ? 800 : 400;
+            // Never draw a photo larger than its source: many are under 600px and pixelate when stretched.
+            const sourceWidth = image.width ?? target;
+            const sourceHeight = image.height ?? target;
+            const scale = Math.min(1, target / Math.max(sourceWidth, sourceHeight));
+            return (
+              <div
+                key={image.url}
+                className={`border-border flex aspect-square items-center justify-center overflow-hidden rounded-lg border bg-white p-4 ${index === 0 ? "col-span-2" : ""}`}
+              >
+                <img
+                  src={shopifyImageUrl(image.url, { width: target })}
+                  srcSet={srcSetFor(image.url, { width: target })}
+                  alt={image.altText ?? product.title}
+                  width={Math.round(sourceWidth * scale)}
+                  height={Math.round(sourceHeight * scale)}
+                  className="max-h-full max-w-full object-contain"
+                  loading={index === 0 ? "eager" : "lazy"}
+                  {...(index === 0 ? { fetchPriority: "high" } : {})}
+                />
+              </div>
+            );
+          })}
         </div>
 
         {/* Info column */}
