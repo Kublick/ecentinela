@@ -83,6 +83,15 @@ export function Header({ locale, accountLink }: { locale: Locale; accountLink?: 
           >
             {content.header.allCategories}
           </Link>
+          {content.header.navItems.map((item) => (
+            <Link
+              key={item.href}
+              href={localizePath(locale, item.href)}
+              className="text-white no-underline hover:underline"
+            >
+              {item.label}
+            </Link>
+          ))}
 
           <div className="ms-auto flex items-center gap-4 [&_a]:text-white">
             <CurrencySwitch />
