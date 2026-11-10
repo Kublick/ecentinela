@@ -31,7 +31,7 @@ export const en: Content = {
     menu: "Menu",
     navigation: "Main navigation",
     mobileNavigation: "Menu",
-    navItems: [{ label: "Categories", href: "/collections" }],
+    navItems: [{ label: "Quick order", href: "/quick-order" }],
     categories: "Categories",
     allCategories: "View all categories",
     viewCategory: "View all {{ title }}",
@@ -47,7 +47,10 @@ export const en: Content = {
     search: "Search",
     account: "Account",
     paymentMethods: "Payment methods",
-    links: [{ label: "Categories", href: "/collections" }],
+    links: [
+      { label: "Categories", href: "/collections" },
+      { label: "Quick order", href: "/quick-order" },
+    ],
     information: "Information",
     infoLinks: [
       { label: "Contact", href: "/pages/contact" },
@@ -62,6 +65,27 @@ export const en: Content = {
     address:
       "Calzada Benito Juárez No. 2238 Local 5, Centro Comercial Lázaro Cárdenas, Fracc. Las Palmas, 21360 Mexicali, B.C.",
     legalName: "Eléctrica Centinela, S. de R.L. de C.V.",
+  },
+  quickOrder: {
+    title: "Quick order",
+    description: "Add several products to your cart by typing their part numbers.",
+    intro: "Enter the part numbers and quantities, then press Add to cart.",
+    partNumber: "Part number",
+    quantity: "Quantity",
+    partNumberRow: "Part number, row {{ row }}",
+    quantityRow: "Quantity, row {{ row }}",
+    addRow: "Add row",
+    suggestions: "Suggested products",
+    submit: "Add to cart",
+    adding: "Adding…",
+    notFound: "We couldn't find this part number.",
+    soldOut: "Sold out.",
+    empty: "Enter at least one part number.",
+    lookupError: "We couldn't look up the products. Please try again.",
+    rowErrors: {
+      one: "Check the marked row.",
+      other: "Check the {{ count }} marked rows.",
+    },
   },
   account: {
     title: "Account",

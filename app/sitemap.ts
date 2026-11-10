@@ -44,7 +44,12 @@ async function fetchSitemap(): Promise<SitemapEntry[]> {
     console.error("[hydrogen] Sitemap query failed", errors);
   }
 
-  const entries: SitemapEntry[] = [{ path: "/" }, { path: "/collections" }, { path: "/search" }];
+  const entries: SitemapEntry[] = [
+    { path: "/" },
+    { path: "/collections" },
+    { path: "/search" },
+    { path: "/quick-order" },
+  ];
 
   for (const collection of data?.collections?.nodes ?? []) {
     entries.push({

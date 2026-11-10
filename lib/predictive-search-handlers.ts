@@ -11,9 +11,13 @@ import { createPredictiveSearchServerHandlers, gql } from "@shopify/hydrogen";
 export const predictiveSearchHandlers = createPredictiveSearchServerHandlers({
   types: ["QUERY", "PRODUCT"],
   limit: 6,
+  // With a market in @inContext (we always send MX), the default HIDE drops
+  // every product, in stock or not. LAST keeps them, sold out at the end.
+  unavailableProducts: "LAST",
   fragments: {
     product: gql(`
       fragment PredictiveSearchProductFragment on Product {
+        availableForSale
         vendor
         description(truncateAt: 180)
         selectedOrFirstAvailableVariant(
