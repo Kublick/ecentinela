@@ -158,6 +158,7 @@ export const en: Content = {
       lowStock: "Low stock",
       lowStockCount: "Only {{ count }} left in stock",
       outOfStock: "Out of stock",
+      onOrder: "On order",
     },
   },
   collection: {
@@ -228,6 +229,7 @@ export const en: Content = {
       stockCount: "{{ count }} in stock",
       available: "Available",
       unavailable: "Out of stock",
+      onOrder: "On order",
       addSelected: "Add to cart",
       addSelectedCount: {
         one: "Add 1 product to cart",

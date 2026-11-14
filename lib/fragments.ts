@@ -155,6 +155,7 @@ export const VARIANT_FIELDS_FRAGMENT = gql(`
     id
     title
     availableForSale
+    currentlyNotInStock
     selectedOptions {
       name
       value

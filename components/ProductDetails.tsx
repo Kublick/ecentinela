@@ -152,12 +152,18 @@ function ProductPage({ product }: { product: ProductData }) {
             {selectedVariant ? (
               <span
                 className={`mt-2 inline-flex self-start rounded-full px-3 py-1 text-sm font-semibold ${
-                  !callOnly
+                  !callOnly && !selectedVariant.currentlyNotInStock
                     ? "bg-stock text-on-stock"
                     : "text-on-surface-secondary bg-muted"
                 }`}
               >
-                {stockLabel({ soldOut, callOnly, quantity: selectedVariant.quantityAvailable, content })}
+                {stockLabel({
+                  soldOut,
+                  callOnly,
+                  onOrder: selectedVariant.currentlyNotInStock,
+                  quantity: selectedVariant.quantityAvailable,
+                  content,
+                })}
               </span>
             ) : null}
           </div>
@@ -388,20 +394,27 @@ function variantUrl(
   return `/products/${handle}${query ? `?${query}` : ""}`;
 }
 
-/** Badge under the price: sold out, then price on request, then the stock count when known. */
+/**
+ * Badge under the price: sold out, then price on request, then on order (sold
+ * with no units on hand: Shopify's "continue selling when out of stock"),
+ * then the stock count when known.
+ */
 function stockLabel({
   soldOut,
   callOnly,
+  onOrder,
   quantity,
   content,
 }: {
   soldOut: boolean;
   callOnly: boolean;
+  onOrder: boolean;
   quantity: number | null | undefined;
   content: ReturnType<typeof useI18n>["content"];
 }): string {
   if (soldOut) return content.product.soldOut;
   if (callOnly) return content.collection.table.onRequest;
+  if (onOrder) return content.product.inventory.onOrder;
   if (quantity && quantity > 0) {
     return interpolate(content.collection.table.stockCount, { count: quantity });
   }

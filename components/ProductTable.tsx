@@ -598,11 +598,12 @@ function partNumberOf(product: ProductRowData, variant: RowVariant): string {
 function availabilityLabel(
   variant: RowVariant,
   showStock: boolean,
-  copy: { stockCount: string; available: string; unavailable: string; onRequest: string },
+  copy: { stockCount: string; available: string; unavailable: string; onRequest: string; onOrder: string },
 ): string {
-  // Same precedence as the product page: sold out, then price on request, then stock.
+  // Same precedence as the product page: sold out, price on request, on order, then stock.
   if (!variant.availableForSale) return copy.unavailable;
   if (isPriceOnRequest(variant.price)) return copy.onRequest;
+  if (variant.currentlyNotInStock) return copy.onOrder;
   const quantityAvailable = "quantityAvailable" in variant ? variant.quantityAvailable : null;
   if (showStock && typeof quantityAvailable === "number" && quantityAvailable > 0) {
     return interpolate(copy.stockCount, { count: quantityAvailable });
