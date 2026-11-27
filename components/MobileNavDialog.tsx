@@ -20,7 +20,7 @@ export function MobileNavDialog({
   categories: { title: string; href: string }[];
   allHref: string;
 }) {
-  const { content } = useI18n();
+  const { content, href } = useI18n();
   const [open, setOpen] = useState(false);
   const dialogRef = useRef<HTMLDialogElement>(null);
 
@@ -105,6 +105,16 @@ export function MobileNavDialog({
               >
                 {content.header.allCategories}
               </Link>
+              {content.header.navItems.map((item) => (
+                <Link
+                  key={item.href}
+                  href={href(item.href)}
+                  onClick={() => setOpen(false)}
+                  className="text-link flex min-h-11 items-center font-semibold"
+                >
+                  {item.label}
+                </Link>
+              ))}
               <div className="mt-2 flex flex-wrap items-center gap-4">
                 <LanguageSwitch />
                 <CurrencySwitch />
