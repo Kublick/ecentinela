@@ -212,6 +212,7 @@ export const es = {
       lowStock: "Pocas piezas",
       lowStockCount: "Solo quedan {{ count }} en existencia",
       outOfStock: "Agotado",
+      onOrder: "Sobre pedido",
     },
   },
   collection: {
@@ -282,6 +283,7 @@ export const es = {
       stockCount: "{{ count }} en existencia",
       available: "Disponible",
       unavailable: "Agotado",
+      onOrder: "Sobre pedido",
       addSelected: "Agregar al carrito",
       addSelectedCount: {
         one: "Agregar 1 producto al carrito",
